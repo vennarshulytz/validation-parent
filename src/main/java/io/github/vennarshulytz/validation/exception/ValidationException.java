@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 校验异常
  *
- * @author vennarshulytzextends RuntimeException
+ * @author vennarshulytz
  * @since 1.0.0
  */
 public class ValidationException extends RuntimeException {
