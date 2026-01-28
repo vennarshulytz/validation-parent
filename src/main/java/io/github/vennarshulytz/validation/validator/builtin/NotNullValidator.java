@@ -15,9 +15,14 @@ public class NotNullValidator implements FieldValidator  {
     @Override
     public String validate(String fieldName, Object value, Map<String, String> params) {
         if (value == null) {
-            return params.getOrDefault("message", "不能为null");
+            return params.getOrDefault("message", getDefaultMessage());
         }
         return null;
+    }
+
+    @Override
+    public String getDefaultMessage() {
+        return "不能为 null";
     }
 
 }

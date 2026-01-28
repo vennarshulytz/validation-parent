@@ -20,4 +20,10 @@ public interface FieldValidator {
      */
     String validate(String fieldName, Object value, Map<String, String> params);
 
+    /**
+     * 获取默认错误消息
+     */
+    default String getDefaultMessage() {
+        return "校验失败";
+    }
 }
