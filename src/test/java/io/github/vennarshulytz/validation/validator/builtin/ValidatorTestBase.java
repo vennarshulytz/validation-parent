@@ -1,14 +1,11 @@
 package io.github.vennarshulytz.validation.validator.builtin;
 
 import io.github.vennarshulytz.validation.validator.FieldValidator;
-import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 校验器测试基类
@@ -27,7 +24,7 @@ public abstract class ValidatorTestBase {
 
     protected void assertValid(FieldValidator validator, Object value, Map<String, String> params) {
         String result = validator.validate("testField", value, params);
-        assertNull("Expected validation to pass, but got error: " + result, result);
+        assertNull(result, "Expected validation to pass, but got error: " + result);
     }
 
     /**
@@ -39,7 +36,7 @@ public abstract class ValidatorTestBase {
 
     protected void assertInvalid(FieldValidator validator, Object value, Map<String, String> params) {
         String result = validator.validate("testField", value, params);
-        assertNotNull("Expected validation to fail, but it passed", result);
+        assertNotNull(result, "Expected validation to fail, but it passed");
     }
 
     /**
@@ -48,7 +45,7 @@ public abstract class ValidatorTestBase {
     protected void assertInvalidWithMessage(FieldValidator validator, Object value,
                                             Map<String, String> params, String expectedMessage) {
         String result = validator.validate("testField", value, params);
-        assertNotNull("Expected validation to fail", result);
+        assertNotNull(result, "Expected validation to fail");
         assertEquals(expectedMessage, result);
     }
 

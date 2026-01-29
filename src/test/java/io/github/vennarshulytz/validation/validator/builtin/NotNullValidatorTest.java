@@ -1,7 +1,8 @@
 package io.github.vennarshulytz.validation.validator.builtin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * NotBlankValidator 单元测试
@@ -9,31 +10,28 @@ import org.junit.Test;
  * @author vennarshulytz
  * @since 1.0.0
  */
-public class NotNullValidatorTest extends ValidatorTestBase {
+@DisplayName("NotNullValidator 测试")
+class NotNullValidatorTest extends ValidatorTestBase {
 
     private NotNullValidator validator;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         validator = new NotNullValidator();
     }
 
-    /**
-     * 非null值应该通过校验
-     */
     @Test
-    public void shouldPassWhenValueIsNotNull() {
+    @DisplayName("非null值应该通过校验")
+    void shouldPassWhenValueIsNotNull() {
         assertValid(validator, "string");
         assertValid(validator, 0);
         assertValid(validator, "");
         assertValid(validator, new Object());
     }
 
-    /**
-     * null值应该校验失败
-     */
     @Test
-    public void shouldFailWhenValueIsNull() {
+    @DisplayName("null值应该校验失败")
+    void shouldFailWhenValueIsNull() {
         assertInvalid(validator, null);
     }
 }
