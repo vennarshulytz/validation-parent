@@ -27,11 +27,12 @@ public class ValidationConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public MessageResolver messageResolver(ResourceBundleMessageSource messageSource, ValidationProperties validationProperties) {
-        if (validationProperties.isEnableI18n()) {
+        boolean enableI18n = validationProperties.isEnableI18n();
+        if (enableI18n) {
             messageSource.addBasenames("io/github/vennarshulytz/validation");
             messageSource.setDefaultEncoding("UTF-8");
         }
 
-        return new MessageResolver(messageSource);
+        return new MessageResolver(messageSource, enableI18n);
     }
 }
