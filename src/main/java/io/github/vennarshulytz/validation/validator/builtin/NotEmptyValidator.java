@@ -1,8 +1,13 @@
 package io.github.vennarshulytz.validation.validator.builtin;
 
+import io.github.vennarshulytz.validation.annotation.constraints.NotEmptyCheck;
+import io.github.vennarshulytz.validation.constant.MessageConstants;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -14,36 +19,38 @@ import java.util.Map;
 public class NotEmptyValidator implements FieldValidator {
 
     @Override
-    public String validate(String fieldName, Object value, Map<String, String> params) {
+    public String validate(String fieldName, Object value, Map<String, Object> params, boolean enableI18n) {
         if (value == null) {
-            return params.getOrDefault("message", getDefaultMessage());
+            return getErrorMessage(MessageConstants.NotEmpty, params, enableI18n);
         }
 
         if (value instanceof String) {
             String str = (String) value;
             if (str.isEmpty()) {
-                return params.getOrDefault("message", getDefaultMessage());
+                return getErrorMessage(MessageConstants.NotEmpty, params, enableI18n);
+
             }
         }
 
         if (value instanceof Collection<?>) {
             Collection<?> col = (Collection<?>) value;
             if (col.isEmpty()) {
-                return params.getOrDefault("message", getDefaultMessage());
+                return getErrorMessage(MessageConstants.NotEmpty, params, enableI18n);
             }
         }
 
         if (value instanceof Map<?, ?>) {
             Map<?, ?> map = (Map<?, ?>) value;
             if (map.isEmpty()) {
-                return params.getOrDefault("message", getDefaultMessage());
+                return getErrorMessage(MessageConstants.NotEmpty, params, enableI18n);
+
             }
 
         }
 
         if (value.getClass().isArray()) {
             if (java.lang.reflect.Array.getLength(value) == 0) {
-                return params.getOrDefault("message", getDefaultMessage());
+                return getErrorMessage(MessageConstants.NotEmpty, params, enableI18n);
             }
         }
 
@@ -51,7 +58,20 @@ public class NotEmptyValidator implements FieldValidator {
     }
 
     @Override
+    public Map<String, Object> parseParams(Annotation annotation) {
+
+        if (annotation instanceof NotEmptyCheck) {
+            NotEmptyCheck notEmptyCheck = (NotEmptyCheck) annotation;
+            Map<String, Object> params = new HashMap<>();
+            params.put("message", notEmptyCheck.message());
+            return params;
+        }
+        return Collections.emptyMap();
+    }
+
+    @Override
     public String getDefaultMessage() {
-        return "不能为空";
+        // 不能为空
+        return "must not be empty";
     }
 }

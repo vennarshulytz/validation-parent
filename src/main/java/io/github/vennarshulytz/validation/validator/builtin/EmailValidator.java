@@ -1,8 +1,13 @@
 package io.github.vennarshulytz.validation.validator.builtin;
 
 
+import io.github.vennarshulytz.validation.annotation.constraints.EmailCheck;
+import io.github.vennarshulytz.validation.constant.MessageConstants;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 
+import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,13 +23,13 @@ public class EmailValidator implements FieldValidator {
     private static final int MAX_DOMAIN_PART_LENGTH = 255;
 
     @Override
-    public String validate(String fieldName, Object value, Map<String, String> params) {
+    public String validate(String fieldName, Object value, Map<String, Object> params, boolean enableI18n) {
         if (value == null) {
             return null;
         }
 
         if (!(value instanceof String)) {
-            return params.getOrDefault("message", getDefaultMessage());
+            return getErrorMessage(MessageConstants.Email, params, enableI18n);
         }
 
         String email = (String) value;
@@ -34,7 +39,7 @@ public class EmailValidator implements FieldValidator {
         }
 
         if (!isValidEmail(email)) {
-            return params.getOrDefault("message", getDefaultMessage());
+            return getErrorMessage(MessageConstants.Email, params, enableI18n);
         }
 
         return null;
@@ -173,7 +178,21 @@ public class EmailValidator implements FieldValidator {
     }
 
     @Override
+    public Map<String, Object> parseParams(Annotation annotation) {
+
+        if (annotation instanceof EmailCheck) {
+            EmailCheck emailCheck = (EmailCheck) annotation;
+            Map<String, Object> params = new HashMap<>();
+            params.put("message", emailCheck.message());
+            return params;
+        }
+        return Collections.emptyMap();
+    }
+
+
+    @Override
     public String getDefaultMessage() {
-        return "邮箱格式不正确";
+        // 邮箱格式不正确
+        return "must be a well-formed email address";
     }
 }
