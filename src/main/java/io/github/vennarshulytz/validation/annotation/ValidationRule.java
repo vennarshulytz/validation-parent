@@ -10,8 +10,9 @@ import java.lang.annotation.*;
  * @author vennarshulytz
  * @since 1.0.0
  */
-@Target(ElementType.ANNOTATION_TYPE)
+@Target({ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(ValidationRules.class)
 @Documented
 public @interface ValidationRule {
     /**
