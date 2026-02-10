@@ -1,24 +1,19 @@
 package io.github.vennarshulytz.validation.autoconfigure;
 
+import io.github.vennarshulytz.validation.aop.ValidationPostProcessor;
 import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
 import io.github.vennarshulytz.validation.core.ValidationMode;
 import io.github.vennarshulytz.validation.core.ValidatorRegistry;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
-import io.github.vennarshulytz.validation.resolver.ValidationArgumentResolver;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Role;
 import org.springframework.context.support.ResourceBundleMessageSource;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 校验配置
@@ -37,9 +32,6 @@ public class ValidationConfiguration {
 
     @Autowired(required = false)
     private ResourceBundleMessageSource messageSource;
-
-    @Autowired
-    private List<HttpMessageConverter<?>> messageConverters;
 
     @Bean
     @ConditionalOnMissingBean
@@ -69,33 +61,26 @@ public class ValidationConfiguration {
         return new ValidationEngine(validatorRegistry, messageResolver);
     }
 
+    /**
+     * 注册校验后置处理器
+     */
     @Bean
-    public ValidationArgumentResolver validationArgumentResolver() {
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @ConditionalOnMissingBean
+    public ValidationPostProcessor validationPostProcessor(
+            ValidationEngine validationEngine) {
+
+
         ValidationMode mode = validationProperties != null ? validationProperties.getMode() : ValidationMode.FAIL_FAST;
         boolean enableI18n = validationProperties != null && validationProperties.isEnableI18n();
 
-        // List<HttpMessageConverter<?>> messageConverters = requestMappingHandlerAdapter.getMessageConverters();
-
-        return new ValidationArgumentResolver(
-                validationEngine(validatorRegistry(), messageResolver()),
-                mode,
-                enableI18n,
-                messageConverters
-        );
+        ValidationPostProcessor processor = new ValidationPostProcessor();
+        processor.setValidationEngine(validationEngine);
+        processor.setDefaultMode(mode);
+        processor.setEnableI18n(enableI18n);
+        // 可扩展：支持自定义注解
+        // processor.setValidatedAnnotationType(CustomValidated.class);
+        return processor;
     }
 
-    @Bean
-    public SmartInitializingSingleton argumentResolverInitializer(RequestMappingHandlerAdapter adapter) {
-        return () -> {
-            List<HandlerMethodArgumentResolver> resolvers = new ArrayList<>();
-            // 将自定义解析器添加到最前面
-            resolvers.add(validationArgumentResolver());
-            // 再添加原有的解析器
-            List<HandlerMethodArgumentResolver> argumentResolvers = adapter.getArgumentResolvers();
-            if (argumentResolvers != null) {
-                resolvers.addAll(argumentResolvers);
-            }
-            adapter.setArgumentResolvers(resolvers);
-        };
-    }
 }

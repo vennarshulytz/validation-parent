@@ -4,6 +4,7 @@ import io.github.vennarshulytz.validation.annotation.FieldConfig;
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
+import io.github.vennarshulytz.validation.utils.NamedPlaceholderResolver;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
@@ -163,6 +164,8 @@ public class ValidationEngine {
             // 处理国际化
             if (context.isEnableI18n() && messageResolver != null) {
                 errorMessage = messageResolver.resolve(errorMessage, mergedParams);
+            } else {
+                errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);
             }
 
             String fullPath = buildFullPath(instancePath, fieldName);
@@ -204,10 +207,12 @@ public class ValidationEngine {
     public void validateSimpleParam(Object value, String paramName, ValidateWith validateWith,
                                     java.lang.annotation.Annotation annotation, ValidationContext context) {
         FieldValidator validator = validatorRegistry.getFieldValidator(validateWith.validator());
-        Map<String, Object> params = parseParams(validateWith.params());
+        // Map<String, Object> params = parseParams(validateWith.params());
+        //
+        // // 从注解中提取参数
+        // extractAnnotationParams(annotation, params);
+        Map<String, Object> params = validator.parseParams(annotation);
 
-        // 从注解中提取参数
-        extractAnnotationParams(annotation, params);
 
         String errorMessage = validator.validate(paramName, value, params, context.isEnableI18n());
         if (errorMessage != null) {
