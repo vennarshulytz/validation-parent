@@ -3,7 +3,6 @@ package io.github.vennarshulytz.validation.annotation.constraints;
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.constant.MessageConstants;
 import io.github.vennarshulytz.validation.validator.builtin.NotBlankValidator;
-import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
 
@@ -19,9 +18,5 @@ import java.lang.annotation.*;
 @ValidateWith(validator = NotBlankValidator.class)
 public @interface NotBlankCheck {
 
-    @AliasFor("message")
-    String value() default MessageConstants.NotBlank;
-
-    @AliasFor("value")
     String message() default MessageConstants.NotBlank;
 }
