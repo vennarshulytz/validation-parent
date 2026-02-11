@@ -22,5 +22,6 @@ public @interface NotBlankCheck {
     @AliasFor("message")
     String value() default MessageConstants.NotBlank;
 
+    @AliasFor("value")
     String message() default MessageConstants.NotBlank;
 }

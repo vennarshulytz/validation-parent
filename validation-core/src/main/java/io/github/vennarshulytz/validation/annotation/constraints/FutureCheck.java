@@ -22,5 +22,6 @@ public @interface FutureCheck {
     @AliasFor("message")
     String value() default MessageConstants.Future;
 
+    @AliasFor("value")
     String message() default MessageConstants.Future;
 }

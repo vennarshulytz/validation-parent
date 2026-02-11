@@ -22,5 +22,6 @@ public @interface PositiveCheck {
     @AliasFor("message")
     String value() default MessageConstants.Positive;
 
+    @AliasFor("value")
     String message() default MessageConstants.Positive;
 }

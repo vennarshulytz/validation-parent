@@ -22,5 +22,6 @@ public @interface NegativeOrZeroCheck {
     @AliasFor("message")
     String value() default MessageConstants.NegativeOrZero;
 
+    @AliasFor("value")
     String message() default MessageConstants.NegativeOrZero;
 }

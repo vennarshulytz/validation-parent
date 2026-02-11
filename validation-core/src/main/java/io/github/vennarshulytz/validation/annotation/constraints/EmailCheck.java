@@ -22,5 +22,6 @@ public @interface EmailCheck {
     @AliasFor("message")
     String value() default MessageConstants.Email;
 
+    @AliasFor("value")
     String message() default MessageConstants.Email;
 }

@@ -22,5 +22,6 @@ public @interface PastOrPresentCheck {
     @AliasFor("message")
     String value() default MessageConstants.PastOrPresent;
 
+    @AliasFor("value")
     String message() default MessageConstants.PastOrPresent;
 }

@@ -22,5 +22,6 @@ public @interface FutureOrPresentCheck {
     @AliasFor("message")
     String value() default MessageConstants.FutureOrPresent;
 
+    @AliasFor("value")
     String message() default MessageConstants.FutureOrPresent;
 }

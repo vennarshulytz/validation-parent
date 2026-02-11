@@ -22,5 +22,6 @@ public @interface PastCheck {
     @AliasFor("message")
     String value() default MessageConstants.Past;
 
+    @AliasFor("value")
     String message() default MessageConstants.Past;
 }

@@ -22,5 +22,6 @@ public @interface NegativeCheck {
     @AliasFor("message")
     String value() default MessageConstants.Negative;
 
+    @AliasFor("value")
     String message() default MessageConstants.Negative;
 }

@@ -22,5 +22,6 @@ public @interface AssertFalseCheck {
     @AliasFor("message")
     String value() default MessageConstants.AssertFalse;
 
+    @AliasFor("value")
     String message() default MessageConstants.AssertFalse;
 }

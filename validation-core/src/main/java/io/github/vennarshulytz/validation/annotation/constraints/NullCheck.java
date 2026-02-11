@@ -22,5 +22,6 @@ public @interface NullCheck {
     @AliasFor("message")
     String value() default MessageConstants.Null;
 
+    @AliasFor("value")
     String message() default MessageConstants.Null;
 }

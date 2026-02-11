@@ -22,5 +22,6 @@ public @interface NotNullCheck {
     @AliasFor("message")
     String value() default MessageConstants.NotNull;
 
+    @AliasFor("value")
     String message() default MessageConstants.NotNull;
 }
