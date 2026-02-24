@@ -3,7 +3,6 @@ package io.github.vennarshulytz.validation.validator.builtin;
 
 import io.github.vennarshulytz.validation.annotation.constraints.DigitsCheck;
 import io.github.vennarshulytz.validation.constant.MessageConstants;
-import io.github.vennarshulytz.validation.utils.Decimals;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 
 import java.lang.annotation.Annotation;
@@ -18,7 +17,7 @@ import java.util.Map;
  * @author vennarshulytz
  * @since 1.0.0
  */
-public class DigitsValidator implements FieldValidator {
+public class DigitsValidator extends AbstractDecimalValidator implements FieldValidator {
 
     @Override
     public String validate(String fieldName, Object value, Map<String, Object> params, boolean enableI18n) {
@@ -53,7 +52,7 @@ public class DigitsValidator implements FieldValidator {
 
 
 
-        BigDecimal bd = Decimals.toBigDecimal(value);
+        BigDecimal bd = toBigDecimal(value);
         if (bd == null) {
             return getErrorMessage(MessageConstants.Digits, params, enableI18n);
         }

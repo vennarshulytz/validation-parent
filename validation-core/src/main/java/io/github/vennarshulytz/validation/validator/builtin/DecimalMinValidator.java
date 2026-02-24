@@ -3,7 +3,6 @@ package io.github.vennarshulytz.validation.validator.builtin;
 
 import io.github.vennarshulytz.validation.annotation.constraints.DecimalMinCheck;
 import io.github.vennarshulytz.validation.constant.MessageConstants;
-import io.github.vennarshulytz.validation.utils.Decimals;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 
 import java.lang.annotation.Annotation;
@@ -18,7 +17,7 @@ import java.util.Map;
  * @author vennarshulytz
  * @since 1.0.0
  */
-public class DecimalMinValidator implements FieldValidator {
+public class DecimalMinValidator extends AbstractDecimalValidator implements FieldValidator {
 
     @Override
     public String validate(String fieldName, Object value, Map<String, Object> params, boolean enableI18n) {
@@ -60,7 +59,7 @@ public class DecimalMinValidator implements FieldValidator {
         // value 参数格式错误可能会有异常，直接抛出
         BigDecimal minValue = new BigDecimal(minStr);
 
-        BigDecimal actualValue = Decimals.toBigDecimal(value);
+        BigDecimal actualValue = toBigDecimal(value);
         if (actualValue == null) {
             return null;
         }

@@ -1,17 +1,17 @@
-package io.github.vennarshulytz.validation.utils;
+package io.github.vennarshulytz.validation.validator.builtin;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * 小数工具类
+ * 小数校验器基类
  *
  * @author vennarshulytz
  * @since 1.0.0
  */
-public final class Decimals {
+public abstract class AbstractDecimalValidator {
 
-    public static BigDecimal toBigDecimal(Object value) {
+    protected BigDecimal toBigDecimal(Object value) {
         if (value instanceof BigDecimal) {
             return (BigDecimal) value;
         }
