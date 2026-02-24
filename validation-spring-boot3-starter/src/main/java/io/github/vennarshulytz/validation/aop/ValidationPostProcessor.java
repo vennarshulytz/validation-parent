@@ -1,14 +1,15 @@
 package io.github.vennarshulytz.validation.aop;
 
 import io.github.vennarshulytz.validation.annotation.ValidatedExt;
+import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
-import io.github.vennarshulytz.validation.core.ValidationMode;
 import org.aopalliance.aop.Advice;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.autoproxy.AbstractBeanFactoryAwareAdvisingPostProcessor;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.Ordered;
 
 import java.lang.annotation.Annotation;
@@ -27,9 +28,8 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
      */
     private Class<? extends Annotation> validatedAnnotationType = ValidatedExt.class;
 
-    private ValidationEngine validationEngine;
-    private ValidationMode defaultMode = ValidationMode.FAIL_FAST;
-    private boolean enableI18n = false;
+    private ObjectProvider<ValidationEngine> validationEngineProvider;
+    private ObjectProvider<ValidationProperties> validationPropertiesProvider;
 
     @Override
     public void afterPropertiesSet() {
@@ -46,7 +46,7 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
      * 创建校验 Advice
      */
     protected Advice createValidationAdvice() {
-        return new ValidationMethodInterceptor(validationEngine, defaultMode, enableI18n);
+        return new ValidationMethodInterceptor(validationEngineProvider, validationPropertiesProvider);
     }
 
     // ========== Setter 方法，支持灵活配置 ==========
@@ -58,15 +58,12 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
         this.validatedAnnotationType = validatedAnnotationType;
     }
 
-    public void setValidationEngine(ValidationEngine validationEngine) {
-        this.validationEngine = validationEngine;
+    public void setValidationEngineProvider(ObjectProvider<ValidationEngine> validationEngineProvider) {
+        this.validationEngineProvider = validationEngineProvider;
     }
 
-    public void setDefaultMode(ValidationMode defaultMode) {
-        this.defaultMode = defaultMode;
+    public void setValidationPropertiesProvider(ObjectProvider<ValidationProperties> validationPropertiesProvider) {
+        this.validationPropertiesProvider = validationPropertiesProvider;
     }
 
-    public void setEnableI18n(boolean enableI18n) {
-        this.enableI18n = enableI18n;
-    }
 }

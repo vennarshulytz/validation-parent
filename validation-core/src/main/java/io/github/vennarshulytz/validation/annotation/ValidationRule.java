@@ -18,7 +18,7 @@ public @interface ValidationRule {
     /**
      * 目标类型
      */
-    Class<?> type() default Object.class;
+    Class<?> type() default void.class;
 
     /**
      * 字段路径，支持嵌套路径如 "manager.address"

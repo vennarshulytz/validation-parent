@@ -1,5 +1,7 @@
 package io.github.vennarshulytz.validation.core;
 
+import io.github.vennarshulytz.validation.utils.PathMatchUtil;
+
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,29 +181,7 @@ public class FieldAccessor {
             return false;
         }
 
-        // 精确匹配
-        if (currentPath.equals(targetPath)) {
-            return true;
-        }
-
-        // 以目标路径结尾匹配（支持嵌套）
-        if (currentPath.endsWith("." + targetPath)) {
-            return true;
-        }
-
-       // // 支持路径前缀匹配（如 managerList1 匹配 managerList1.xxx）
-       // if (currentPath.startsWith(targetPath + ".") || currentPath.startsWith(targetPath + "[")) {
-       //     return false; // 只匹配精确路径，不匹配子路径
-       // }
-
-        // 移除数组索引进行匹配
-        String normalizedCurrent = currentPath.replaceAll("\\[\\d+\\]", "");
-        String normalizedTarget = targetPath.replaceAll("\\[\\d+\\]", "");
-
-        // 精确匹配或以目标路径结尾
-        return normalizedCurrent.equals(normalizedTarget) || normalizedCurrent.endsWith("." + normalizedTarget);
-
-        // return false;
+        return PathMatchUtil.match(currentPath, targetPath);
     }
 
     private static boolean isSimpleType(Class<?> clazz) {

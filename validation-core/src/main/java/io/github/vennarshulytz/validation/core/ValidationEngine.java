@@ -209,8 +209,7 @@ public class ValidationEngine {
         FieldValidator validator = validatorRegistry.getFieldValidator(validateWith.validator());
         // Map<String, Object> params = parseParams(validateWith.params());
         //
-        // // 从注解中提取参数
-        // extractAnnotationParams(annotation, params);
+        // 从注解中提取参数
         Map<String, Object> params = validator.parseParams(annotation);
 
 
@@ -218,69 +217,10 @@ public class ValidationEngine {
         if (errorMessage != null) {
             if (context.isEnableI18n() && messageResolver != null) {
                 errorMessage = messageResolver.resolve(errorMessage, params);
+            } else {
+                errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);
             }
             context.getResult().addError(paramName, errorMessage, value);
-        }
-    }
-
-    /**
-     * 从注解中提取参数
-     */
-    private void extractAnnotationParams(java.lang.annotation.Annotation annotation, Map<String, Object> params) {
-        if (annotation == null) {
-            return;
-        }
-
-        Class<? extends java.lang.annotation.Annotation> annotationType = annotation.annotationType();
-
-        try {
-            // 提取 message
-            try {
-                String message = (String) annotationType.getMethod("message").invoke(annotation);
-                if (message != null && !message.isEmpty()) {
-                    params.put("message", message);
-                }
-            } catch (NoSuchMethodException ignored) {}
-
-            // 提取 max (用于 @MaxCheck, @DecimalMaxCheck)
-            try {
-                Object max = annotationType.getMethod("max").invoke(annotation);
-                params.put("max", String.valueOf(max));
-            } catch (NoSuchMethodException ignored) {}
-
-            // 提取 min (用于 @MinCheck, @DecimalMinCheck, @SizeCheck)
-            try {
-                Object min = annotationType.getMethod("min").invoke(annotation);
-                params.put("min", String.valueOf(min));
-            } catch (NoSuchMethodException ignored) {}
-
-            // 提取 inclusive (用于 @DecimalMaxCheck, @DecimalMinCheck)
-            try {
-                Boolean inclusive = (Boolean) annotationType.getMethod("inclusive").invoke(annotation);
-                params.put("inclusive", String.valueOf(inclusive));
-            } catch (NoSuchMethodException ignored) {}
-
-            // 提取 integer 和 fraction (用于 @DigitsCheck)
-            try {
-                Integer integer = (Integer) annotationType.getMethod("integer").invoke(annotation);
-                params.put("integer", String.valueOf(integer));
-            } catch (NoSuchMethodException ignored) {}
-
-            try {
-                Integer fraction = (Integer) annotationType.getMethod("fraction").invoke(annotation);
-                params.put("fraction", String.valueOf(fraction));
-            } catch (NoSuchMethodException ignored) {}
-
-            // 提取 regexp (用于 @PatternCheck)
-            try {
-                String regexp = (String) annotationType.getMethod("regexp").invoke(annotation);
-                if (regexp != null && !regexp.isEmpty()) {
-                    params.put("regexp", regexp);
-                }
-            } catch (NoSuchMethodException ignored) {}
-
-        } catch (Exception e) {
-            // 忽略反射异常
         }
     }
 }

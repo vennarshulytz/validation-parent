@@ -3,17 +3,17 @@ package io.github.vennarshulytz.validation.autoconfigure;
 import io.github.vennarshulytz.validation.aop.ValidationPostProcessor;
 import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
-import io.github.vennarshulytz.validation.core.ValidationMode;
 import io.github.vennarshulytz.validation.core.ValidatorRegistry;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Role;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.lang.Nullable;
 
 /**
  * 校验配置
@@ -21,34 +21,26 @@ import org.springframework.context.support.ResourceBundleMessageSource;
  * @author vennarshulytz
  * @since 1.0.0
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class ValidationConfiguration {
-
-    @Autowired
-    private BeanFactory beanFactory;
-
-    @Autowired
-    private ValidationProperties validationProperties;
-
-    @Autowired(required = false)
-    private ResourceBundleMessageSource messageSource;
 
     @Bean
     @ConditionalOnMissingBean
-    public ValidatorRegistry validatorRegistry() {
+    public ValidatorRegistry validatorRegistry(BeanFactory beanFactory) {
         return new ValidatorRegistry(beanFactory);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public MessageResolver messageResolver() {
-        boolean enableI18n = validationProperties.isEnableI18n();
+    public MessageResolver messageResolver(@Nullable ValidationProperties validationProperties,
+                                           @Nullable ResourceBundleMessageSource messageSource) {
+        boolean enableI18n = validationProperties != null && validationProperties.isEnableI18n();
         if (enableI18n) {
             if (messageSource == null) {
                 messageSource = new ResourceBundleMessageSource();
             }
 
-            messageSource.addBasenames("io/github/vennarshulytz/validation");
+            messageSource.addBasenames("io/github/vennarshulytz/validation/ValidationMessages");
             messageSource.setDefaultEncoding("UTF-8");
         }
 
@@ -67,20 +59,13 @@ public class ValidationConfiguration {
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean
-    public ValidationPostProcessor validationPostProcessor(
-            ValidationEngine validationEngine) {
-
-
-        ValidationMode mode = validationProperties != null ? validationProperties.getMode() : ValidationMode.FAIL_FAST;
-        boolean enableI18n = validationProperties != null && validationProperties.isEnableI18n();
+    public static ValidationPostProcessor validationPostProcessor(
+            ObjectProvider<ValidationEngine> validationEngineProvider,
+            ObjectProvider<ValidationProperties> validationPropertiesProvider) {
 
         ValidationPostProcessor processor = new ValidationPostProcessor();
-        processor.setValidationEngine(validationEngine);
-        processor.setDefaultMode(mode);
-        processor.setEnableI18n(enableI18n);
-        // 可扩展：支持自定义注解
-        // processor.setValidatedAnnotationType(CustomValidated.class);
+        processor.setValidationEngineProvider(validationEngineProvider);
+        processor.setValidationPropertiesProvider(validationPropertiesProvider);
         return processor;
     }
-
 }
