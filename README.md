@@ -1,25 +1,14 @@
 
 
-# Controller Validation Starter
+# Custom Validation Starter
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.vennarshulytz/validation-spring-boot-starter.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.vennarshulytz/validation-spring-boot-starter)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java Version](https://img.shields.io/badge/Java-8%2B-green.svg)](https://www.oracle.com/java/technologies/javase-downloads.html)
 
+##### 📖 English Documentation | 📖 [中文文档](README_zh.md)
+
 A lightweight Spring Boot Starter that encapsulates validation logic in the Controller layer, keeping your entity classes clean and free from validation annotations.
-
-## 📖 Table of Contents
-
-- [Background](#background)
-- [Key Advantages](#key-advantages)
-- [Quick Start](#quick-start)
-- [Basic Usage](#basic-usage)
-- [Advanced Usage](#advanced-usage)
-- [Built-in Validators](#built-in-validators)
-- [Custom Validators](#custom-validators)
-- [Configuration](#configuration)
-- [Comparison with Spring Validation](#comparison-with-spring-validation)
-- [License](#license)
 
 ## Background
 
@@ -70,7 +59,7 @@ Validations involving database queries or remote calls are difficult to implemen
 
 ## Key Advantages
 
-| Feature | Controller Validation | Spring Validation |
+| Feature | Custom Validation | Spring Validation |
 |---------|----------------------|-------------------|
 | Entity Pollution | ❌ No pollution | ✅ Heavy annotation pollution |
 | Group Validation | ✅ No groups needed | ⚠️ Group interfaces everywhere |
@@ -80,11 +69,23 @@ Validations involving database queries or remote calls are difficult to implemen
 | Learning Curve | ✅ Low - just write normal code | ⚠️ Medium to High |
 | Maintainability | ✅ Validation logic centralized | ⚠️ Scattered in entities |
 
+##  Version Compatibility
+
+| Starter Module                    | Spring Boot | JDK  | Servlet API |
+| --------------------------------- | ----------- | ---- | ----------- |
+| `validation-spring-boot-starter`  | 1.x / 2.x   | 8+   | javax       |
+| `validation-spring-boot3-starter` | 3.x         | 17+  | jakarta     |
+
 ## Quick Start
 
 ### 1. Add Dependency
 
+Choose the appropriate starter based on your Spring Boot version:
+
+#### Spring Boot 1.x / Spring Boot 2.x（JDK 8+）
+
 **Maven:**
+
 ```xml
 <dependency>
     <groupId>io.github.vennarshulytz</groupId>
@@ -94,8 +95,27 @@ Validations involving database queries or remote calls are difficult to implemen
 ```
 
 **Gradle:**
+
 ```groovy
 implementation 'io.github.vennarshulytz:validation-spring-boot-starter:1.0.0'
+```
+
+#### Spring Boot 3.x（JDK 17+）
+
+**Maven:**
+
+```xml
+<dependency>
+    <groupId>io.github.vennarshulytz</groupId>
+    <artifactId>validation-spring-boot3-starter</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+**Gradle:**
+
+```groovy
+implementation 'io.github.vennarshulytz:validation-spring-boot3-starter:1.0.0'
 ```
 
 ### 2. Enable the Feature
@@ -114,7 +134,10 @@ public class Application {
 
 ### 3. Start Using
 
+Mark the class containing the methods that need parameter validation with the `@ValidatedExt` annotation.
+
 ```java
+@ValidatedExt
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -303,7 +326,7 @@ public Result update(@RequestBody @Validated(UserDTO.Update.class) UserDTO user)
 }
 ```
 
-#### After (Controller Validation)
+#### After (Custom Validation)
 
 ```java
 // ========== Entity class stays clean ==========
@@ -560,7 +583,7 @@ public class DateRangeValidator implements ConstraintValidator<ValidDateRange, O
 public class OrderDTO { ... }
 ```
 
-#### Controller Validation Approach
+#### Custom Validation Approach
 
 ```java
 // Just implement the interface - as simple as writing a normal Service
@@ -583,15 +606,28 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
 
 | Validator | Description | Parameters |
 |-----------|-------------|------------|
-| NotNullValidator | Not null validation | - |
-| NotBlankValidator | Not blank string validation | - |
-| NotEmptyValidator | Not empty collection/array/string | - |
-| NullValidator | Must be null validation | - |
-| SizeValidator | Length/size validation | min, max |
-| PatternValidator | Regular expression validation | regexp |
-| RangeValidator | Numeric range validation | min, max |
+| AssertFalseValidator | Must be false validation | - |
+| AssertTrueValidator | Must be true validation | - |
+| DecimalMaxValidator | Decimal maximum value validation | value, inclusive |
+| DecimalMinValidator | Decimal minimum value validation | value, inclusive |
+| DigitsValidator | Numeric digits validation | integer, fraction |
 | EmailValidator | Email format validation | - |
-| PhoneValidator | Phone number validation (China) | - |
+| FutureValidator | Must be a future date/time validation | - |
+| FutureOrPresentValidator | Must be a present or future date/time validation | - |
+| MaxValidator | Maximum value validation | value |
+| MinValidator | Minimum value validation | value |
+| NegativeValidator | Must be negative validation | - |
+| NegativeOrZeroValidator | Must be negative or zero validation | - |
+| NotBlankValidator | Not blank string validation | - |
+| NotEmptyValidator | Not empty validation (string, collection, map, array) | - |
+| NotNullValidator | Not null validation | - |
+| NullValidator | Must be null validation | - |
+| PastValidator | Must be a past date/time validation | - |
+| PastOrPresentValidator | Must be a present or past date/time validation | - |
+| PatternValidator | Regular expression validation | regexp |
+| PositiveValidator | Must be positive validation | - |
+| PositiveOrZeroValidator | Must be positive or zero validation | - |
+| SizeValidator | Length/size validation | min, max |
 
 ### Usage Examples
 
@@ -606,10 +642,43 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
                                     message = "Invalid phone number format",
                                     params = {"regexp=^1[3-9]\\d{9}$"}))
 
-@ValidateWith(validator = RangeValidator.class,
-              fields = @FieldConfig(names = "age",
-                                    message = "Age must be between {min} and {max}",
-                                    params = {"min=0", "max=150"}))
+```
+
+### Built-in Check Annotations
+
+| Check Annotation      | Description                                      | Parameters        |
+| --------------------- | ------------------------------------------------ | ----------------- |
+| @AssertFalseCheck     | Must be false                                    | -                 |
+| @AssertTrueCheck      | Must be true                                     | -                 |
+| @DecimalMaxCheck      | Decimal maximum value check                      | value, inclusive  |
+| @DecimalMinCheck      | Decimal minimum value check                      | value, inclusive  |
+| @DigitsCheck          | Numeric digits check                             | integer, fraction |
+| @EmailCheck           | Email format check                               | -                 |
+| @FutureCheck          | Must be a future date/time                       | -                 |
+| @FutureOrPresentCheck | Must be a present or future date/time            | -                 |
+| @MaxCheck             | Maximum value check                              | value             |
+| @MinCheck             | Minimum value check                              | value             |
+| @NegativeCheck        | Must be negative                                 | -                 |
+| @NegativeOrZeroCheck  | Must be negative or zero                         | -                 |
+| @NotBlankCheck        | Not blank string check                           | -                 |
+| @NotEmptyCheck        | Not empty check (string, collection, map, array) | -                 |
+| @NotNullCheck         | Not null check                                   | -                 |
+| @NullCheck            | Must be null check                               | -                 |
+| @PastCheck            | Must be a past date/time                         | -                 |
+| @PastOrPresentCheck   | Must be a present or past date/time              | -                 |
+| @PatternCheck         | Regular expression check                         | regexp            |
+| @PositiveCheck        | Must be positive                                 | -                 |
+| @PositiveOrZeroCheck  | Must be positive or zero                         | -                 |
+| @SizeCheck            | Length/size check                                | min, max          |
+
+### Usage Examples
+
+```java
+@GetMapping("/detail")
+public Result getDetail(@RequestParam @NotNullCheck(message = "ID is required") Long id,
+                        @RequestParam @NotBlankCheck(message = "Token is required") String token) {
+    return Result.success();
+}
 ```
 
 ## Custom Validators
@@ -653,7 +722,7 @@ public class IdCardValidator implements FieldValidator {
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| failFast | boolean | true | Enable fail-fast mode |
+| mode | ValidationMode | true | Enable fail-fast mode |
 | enableI18n | boolean | false | Enable i18n message support |
 
 ```java
@@ -661,7 +730,7 @@ public class IdCardValidator implements FieldValidator {
 @EnableValidation
 
 // Full validation mode: Collect all errors before returning
-@EnableValidation(failFast = false)
+@EnableValidation(ValidationMode.FAIL_ALL)
 
 // Enable i18n message support
 @EnableValidation(enableI18n = true)
@@ -684,7 +753,7 @@ validation.user.phone.pattern=Invalid phone number format
 Usage:
 
 ```java
-@FieldConfig(names = "username", message = "{validation.user.username.notblank}")
+@FieldConfig(names = "username", message = "validation.user.username.notblank")
 ```
 
 ### Error Response Format
@@ -712,7 +781,7 @@ Usage:
 
 ### Feature Comparison
 
-| Scenario | Controller Validation | Spring Validation |
+| Scenario | Custom Validation | Spring Validation |
 |----------|----------------------|-------------------|
 | Simple null check | ✅ Simple | ✅ Simple |
 | Group validation | ✅ No groups needed | ⚠️ Requires group interfaces |
@@ -730,7 +799,7 @@ Usage:
 | Approach | Entity Code | Controller Code | Extra Classes |
 |----------|-------------|-----------------|---------------|
 | Spring Validation | ~50 lines of annotations | ~10 lines | 2 group interfaces |
-| Controller Validation | 0 | ~40 lines | 0 |
+| Custom Validation | 0 | ~40 lines | 0 |
 
 Although Controller code slightly increases, benefits include:
 
@@ -739,6 +808,21 @@ Although Controller code slightly increases, benefits include:
 3. Validation logic centralized, easy to maintain
 4. Different endpoint validations are independent
 
+## Module Structure
+
+```
+validation-parent/
+├── validation-core                  # Core module
+├── validation-spring-boot-starter   # Spring Boot 1.x / Spring Boot 2.x support  (JDK 8+)
+└── validation-spring-boot3-starter  # Spring Boot 3.x support (JDK 17+)
+```
+
+## Contributing
+
+Issues and Pull Requests are welcome!
+
 ## License
 
-Apache License 2.0
+This project is licensed under the [Apache License 2.0](LICENSE).
+
+---

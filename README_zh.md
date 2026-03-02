@@ -1,23 +1,12 @@
-# Controller Validation Starter
+# Custom Validation Starter
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.vennarshulytz/validation-spring-boot-starter.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.vennarshulytz/validation-spring-boot-starter)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java Version](https://img.shields.io/badge/Java-8%2B-green.svg)](https://www.oracle.com/java/technologies/javase-downloads.html)
 
+##### [📖 English Documentation](README.md) | 📖 中文文档
+
 一个轻量级的 Spring Boot Starter，将参数校验逻辑内聚在 Controller 层，避免实体类被校验注解污染。
-
-## 📖 目录
-
-- [项目背景](#项目背景)
-- [核心优势](#核心优势)
-- [快速开始](#快速开始)
-- [基础使用](#基础使用)
-- [进阶使用](#进阶使用)
-- [内置校验器](#内置校验器)
-- [自定义校验器](#自定义校验器)
-- [配置说明](#配置说明)
-- [与 Spring Validation 对比](#与-spring-validation-对比)
-- [License](#license)
 
 ## 项目背景
 
@@ -76,7 +65,7 @@ public class DateRangeDTO {
 
 ## 核心优势
 
-| 特性 | Controller Validation | Spring Validation |
+| 特性 | Custom Validation | Spring Validation |
 |------|----------------------|-------------------|
 | 实体类污染 | ❌ 无污染 | ✅ 大量注解污染 |
 | 分组校验 | ✅ 无需分组，按接口独立配置 | ⚠️ 分组接口泛滥 |
@@ -86,11 +75,23 @@ public class DateRangeDTO {
 | 学习成本 | ✅ 低，像写普通代码一样 | ⚠️ 中高 |
 | 可维护性 | ✅ 校验逻辑集中在 Controller | ⚠️ 分散在实体类 |
 
+##  版本兼容性
+
+| Starter 模块                      | Spring Boot 版本 | JDK 版本 | Servlet API |
+| --------------------------------- | ---------------- | -------- | ----------- |
+| `validation-spring-boot-starter`  | 1.x / 2.x        | 8+       | javax       |
+| `validation-spring-boot3-starter` | 3.x              | 17+      | jakarta     |
+
 ## 快速开始
 
 ### 1. 添加依赖
 
+根据您的 Spring Boot 版本选择合适的 Starter：
+
+#### Spring Boot 1.x / Spring Boot 2.x（JDK 8+）
+
 **Maven:**
+
 ```xml
 <dependency>
     <groupId>io.github.vennarshulytz</groupId>
@@ -100,6 +101,24 @@ public class DateRangeDTO {
 ```
 
 **Gradle:**
+```groovy
+implementation 'io.github.vennarshulytz:validation-spring-boot-starter:1.0.0'
+```
+
+#### Spring Boot 3.x（JDK 17+）
+
+**Maven:**
+
+```xml
+<dependency>
+    <groupId>io.github.vennarshulytz</groupId>
+    <artifactId>validation-spring-boot3-starter</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+**Gradle:**
+
 ```groovy
 implementation 'io.github.vennarshulytz:validation-spring-boot-starter:1.0.0'
 ```
@@ -120,7 +139,10 @@ public class Application {
 
 ### 3. 开始使用
 
+在需要进行参数校验的方法所在的类上，标记 `@ValidatedExt` 注解。
+
 ```java
+@ValidatedExt
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -311,7 +333,7 @@ public Result update(@RequestBody @Validated(UserDTO.Update.class) UserDTO user)
 }
 ```
 
-#### 使用后（Controller Validation）
+#### 使用后（Custom Validation）
 
 ```java
 // ========== 实体类保持干净 ==========
@@ -573,7 +595,7 @@ public class DateRangeValidator implements ConstraintValidator<ValidDateRange, O
 public class OrderDTO { ... }
 ```
 
-#### Controller Validation 方式
+#### Custom Validation 方式
 
 ```java
 // 直接实现接口，像写普通 Service 一样简单
@@ -596,15 +618,28 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
 
 | 校验器 | 说明 | 参数 |
 |--------|------|------|
-| NotNullValidator | 非空校验 | - |
-| NotBlankValidator | 非空白字符串校验 | - |
-| NotEmptyValidator | 非空集合/数组/字符串校验 | - |
-| NullValidator | 必须为空校验 | - |
-| SizeValidator | 长度/大小校验 | min, max |
-| PatternValidator | 正则表达式校验 | regexp |
-| RangeValidator | 数值范围校验 | min, max |
+| AssertFalseValidator | 必须为 false 校验 | - |
+| AssertTrueValidator | 必须为 true 校验 | - |
+| DecimalMaxValidator | 小数最大值校验 | value, inclusive |
+| DecimalMinValidator | 小数最小值校验 | value, inclusive |
+| DigitsValidator | 数字位数校验 | integer, fraction |
 | EmailValidator | 邮箱格式校验 | - |
-| PhoneValidator | 手机号校验（中国大陆） | - |
+| FutureValidator | 必须是将来时间校验 | - |
+| FutureOrPresentValidator | 必须是当前或将来时间校验 | - |
+| MaxValidator | 最大值校验 | value |
+| MinValidator | 最小值校验 | value |
+| NegativeValidator | 负数校验 | - |
+| NegativeOrZeroValidator | 负数或零校验 | - |
+| NotBlankValidator | 非空白字符串校验 | - |
+| NotEmptyValidator | 非空校验（字符串、集合、Map、数组） | - |
+| NotNullValidator | 非空校验 | - |
+| NullValidator | 必须为 null 校验 | - |
+| PastValidator | 必须是过去时间校验 | - |
+| PastOrPresentValidator | 必须是当前或过去时间校验 | - |
+| PatternValidator | 正则表达式校验 | regexp |
+| PositiveValidator | 正数校验 | - |
+| PositiveOrZeroValidator | 正数或零校验 | - |
+| SizeValidator | 大小/长度校验 | min, max |
 
 ### 使用示例
 
@@ -619,10 +654,43 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
                                     message = "手机号格式不正确",
                                     params = {"regexp=^1[3-9]\\d{9}$"}))
 
-@ValidateWith(validator = RangeValidator.class,
-              fields = @FieldConfig(names = "age",
-                                    message = "年龄必须在{min}-{max}岁之间",
-                                    params = {"min=0", "max=150"}))
+```
+
+### 内置校验注解
+
+| 校验注解              | 说明                                | 参数              |
+| --------------------- | ----------------------------------- | ----------------- |
+| @AssertFalseCheck     | 必须为 false                        | -                 |
+| @AssertTrueCheck      | 必须为 true                         | -                 |
+| @DecimalMaxCheck      | 小数最大值校验                      | value, inclusive  |
+| @DecimalMinCheck      | 小数最小值校验                      | value, inclusive  |
+| @DigitsCheck          | 数字位数校验                        | integer, fraction |
+| @EmailCheck           | 邮箱格式校验                        | -                 |
+| @FutureCheck          | 必须是将来时间                      | -                 |
+| @FutureOrPresentCheck | 必须是当前或将来时间                | -                 |
+| @MaxCheck             | 最大值校验                          | value             |
+| @MinCheck             | 最小值校验                          | value             |
+| @NegativeCheck        | 负数校验                            | -                 |
+| @NegativeOrZeroCheck  | 负数或零校验                        | -                 |
+| @NotBlankCheck        | 非空白字符串校验                    | -                 |
+| @NotEmptyCheck        | 非空校验（字符串、集合、Map、数组） | -                 |
+| @NotNullCheck         | 非空校验                            | -                 |
+| @NullCheck            | 必须为 null 校验                    | -                 |
+| @PastCheck            | 必须是过去时间                      | -                 |
+| @PastOrPresentCheck   | 必须是当前或过去时间                | -                 |
+| @PatternCheck         | 正则表达式校验                      | regexp            |
+| @PositiveCheck        | 正数校验                            | -                 |
+| @PositiveOrZeroCheck  | 正数或零校验                        | -                 |
+| @SizeCheck            | 大小/长度校验                       | min, max          |
+
+### 使用示例
+
+```java
+@GetMapping("/detail")
+public Result getDetail(@RequestParam @NotNullCheck(message = "ID不能为空") Long id,
+                        @RequestParam @NotBlankCheck(message = "token不能为空") String token) {
+    return Result.success();
+}
 ```
 
 ## 自定义校验器
@@ -668,7 +736,7 @@ public class IdCardValidator implements FieldValidator {
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| failFast | boolean | true | 是否启用快速失败模式 |
+| mode | ValidationMode | true | 是否启用快速失败模式 |
 | enableI18n | boolean | false | 是否启用国际化消息 |
 
 ```java
@@ -676,7 +744,7 @@ public class IdCardValidator implements FieldValidator {
 @EnableValidation
 
 // 全量校验模式：收集所有错误后返回
-@EnableValidation(failFast = false)
+@EnableValidation(ValidationMode.FAIL_ALL)
 
 // 启用国际化消息支持
 @EnableValidation(enableI18n = true)
@@ -699,7 +767,7 @@ validation.user.phone.pattern=Invalid phone number format
 使用方式：
 
 ```java
-@FieldConfig(names = "username", message = "{validation.user.username.notblank}")
+@FieldConfig(names = "username", message = "validation.user.username.notblank")
 ```
 
 ### 错误响应格式
@@ -727,7 +795,7 @@ validation.user.phone.pattern=Invalid phone number format
 
 ### 功能对比
 
-| 场景 | Controller Validation | Spring Validation |
+| 场景 | Custom Validation | Spring Validation |
 |------|----------------------|-------------------|
 | 简单非空校验 | ✅ 简单 | ✅ 简单 |
 | 分组校验 | ✅ 无需分组 | ⚠️ 需要定义分组接口 |
@@ -745,7 +813,7 @@ validation.user.phone.pattern=Invalid phone number format
 | 方案 | 实体类代码量 | Controller 代码量 | 额外类 |
 |------|-------------|-------------------|--------|
 | Spring Validation | ~50 行注解 | ~10 行 | 2 个分组接口 |
-| Controller Validation | 0 | ~40 行 | 0 |
+| Custom Validation | 0 | ~40 行 | 0 |
 
 虽然 Controller 代码量略增，但：
 
@@ -754,6 +822,21 @@ validation.user.phone.pattern=Invalid phone number format
 3. 校验逻辑集中，易于维护
 4. 不同接口的校验规则独立，互不影响
 
-## License
+## 模块结构
 
-Apache License 2.0
+```
+validation-parent/
+├── validation-core                  # 核心模块
+├── validation-spring-boot-starter   # Spring Boot 1.x / Spring Boot 2.x 支持 （JDK 8+）
+└── validation-spring-boot3-starter  # Spring Boot 3.x 支持 （JDK 17+）
+```
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+## 开源协议
+
+本项目基于 [Apache License 2.0](LICENSE) 开源。
+
+---
