@@ -1,0 +1,356 @@
+name: Publish to Maven Central
+
+# =============================================================================
+# 触发条件
+# =============================================================================
+on:
+  # 推送以 'v' 开头的标签时触发
+  push:
+    tags:
+      - 'v*'  # 匹配: v1.0.0, v2.1.0, v1.0.0-beta, v1.0.0-RC1 等
+
+  # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '要发布的标签名称（如 v1.0.0）'
+        required: true
+        type: string
+      skip_tests:
+        description: '是否跳过测试'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      dry_run:
+        description: '试运行模式（不实际发布）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      deployment_timeout:
+        description: '部署超时时间（分钟）'
+        required: false
+        default: '30'
+        type: choice
+        options:
+          - '15'
+          - '30'
+          - '45'
+          - '60'
+
+# =============================================================================
+# 全局环境变量
+# =============================================================================
+env:
+  MAVEN_OPTS: >-
+    -Xmx1024m 
+    -XX:MaxMetaspaceSize=512m 
+    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+    -Dorg.slf4j.simpleLogger.showDateTime=true
+    -Djava.awt.headless=true
+
+  MAVEN_CLI_OPTS: '--batch-mode --errors --fail-at-end --show-version --no-transfer-progress'
+
+# =============================================================================
+# 并发控制
+# =============================================================================
+concurrency:
+  group: maven-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+# =============================================================================
+# 作业定义
+# =============================================================================
+jobs:
+  # ===========================================================================
+  # Job 1: 验证与准备
+  # ===========================================================================
+  prepare:
+    name: 🔍 Validate & Prepare
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      tag_name: ${{ steps.extract-version.outputs.tag_name }}
+      is_prerelease: ${{ steps.extract-version.outputs.is_prerelease }}
+      skip_tests: ${{ steps.set-options.outputs.skip_tests }}
+      dry_run: ${{ steps.set-options.outputs.dry_run }}
+      deployment_timeout: ${{ steps.set-options.outputs.deployment_timeout }}
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: ⚙️ Set Runtime Options
+        id: set-options
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "skip_tests=${{ github.event.inputs.skip_tests }}" >> $GITHUB_OUTPUT
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> $GITHUB_OUTPUT
+            echo "deployment_timeout=${{ github.event.inputs.deployment_timeout }}" >> $GITHUB_OUTPUT
+          else
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+            echo "dry_run=false" >> $GITHUB_OUTPUT
+            echo "deployment_timeout=30" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🏷️ Extract Version from Tag
+        id: extract-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+          else
+            TAG_NAME="${GITHUB_REF_NAME}"
+          fi
+          
+          echo "📌 Processing tag: $TAG_NAME"
+          
+          # 验证标签格式
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Invalid tag format: $TAG_NAME"
+            echo "   Expected format: v<major>.<minor>.<patch>[-<prerelease>]"
+            echo "   Examples: v1.0.0, v2.1.0-beta, v1.0.0-RC1"
+            exit 1
+          fi
+          
+          VERSION="${TAG_NAME#v}"
+          
+          if [[ "$VERSION" =~ (alpha|beta|rc|snapshot|SNAPSHOT|RC|Alpha|Beta) ]]; then
+            IS_PRERELEASE="true"
+            echo "⚠️  Pre-release version detected"
+          else
+            IS_PRERELEASE="false"
+            echo "✅ Stable release version"
+          fi
+          
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "╔════════════════════════════════════════╗"
+          echo "║       Version Information              ║"
+          echo "╠════════════════════════════════════════╣"
+          echo "║  Tag:        $TAG_NAME"
+          echo "║  Version:    $VERSION"
+          echo "║  Prerelease: $IS_PRERELEASE"
+          echo "╚════════════════════════════════════════╝"
+
+      - name: 🔎 Validate POM Version
+        run: |
+          VERSION="${{ steps.extract-version.outputs.version }}"
+          POM_VERSION=$(grep -m1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | tr -d '[:space:]')
+          
+          echo "📋 Tag version:  $VERSION"
+          echo "📋 POM version:  $POM_VERSION"
+          
+          if [ "$VERSION" != "$POM_VERSION" ]; then
+            echo ""
+            echo "⚠️  WARNING: Version mismatch detected!"
+            echo "   Tag version ($VERSION) differs from POM version ($POM_VERSION)"
+            echo ""
+          else
+            echo "✅ Versions are synchronized"
+          fi
+
+  # ===========================================================================
+  # Job 2: 发布到 Maven Central
+  # ===========================================================================
+  publish:
+    name: 📦 Publish to Maven Central
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: needs.prepare.outputs.dry_run != 'true'
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag_name }}
+          fetch-depth: 0
+
+      - name: ☕ Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: 🔐 Configure GPG Agent
+        run: |
+          echo "🔐 Configuring GPG for non-interactive signing..."
+          
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          
+          cat > ~/.gnupg/gpg-agent.conf << EOF
+          allow-loopback-pinentry
+          allow-preset-passphrase
+          default-cache-ttl 600
+          max-cache-ttl 7200
+          EOF
+          
+          cat > ~/.gnupg/gpg.conf << EOF
+          use-agent
+          pinentry-mode loopback
+          no-tty
+          EOF
+          
+          gpgconf --kill gpg-agent || true
+          gpgconf --launch gpg-agent || true
+          
+          echo "📋 Available GPG keys:"
+          gpg --list-secret-keys --keyid-format LONG || echo "   No keys found"
+          
+          echo "✅ GPG configuration completed"
+
+      - name: 🔧 Verify Maven Environment
+        run: |
+          echo "📋 Maven version:"
+          mvn --version
+          echo ""
+          echo "📋 Java version:"
+          java --version
+
+      - name: 🚀 Build and Publish
+        run: |
+          echo "═══════════════════════════════════════════════════════════════"
+          echo "   Publishing to Maven Central"
+          echo "   Version: ${{ needs.prepare.outputs.version }}"
+          echo "   Skip Tests: ${{ needs.prepare.outputs.skip_tests }}"
+          echo "   Deployment Timeout: ${{ needs.prepare.outputs.deployment_timeout }} minutes"
+          echo "═══════════════════════════════════════════════════════════════"
+          echo ""
+          
+          # 计算超时时间（秒）
+          TIMEOUT_SECONDS=$(( ${{ needs.prepare.outputs.deployment_timeout }} * 60 ))
+          
+          MAVEN_ARGS="${MAVEN_CLI_OPTS}"
+          MAVEN_ARGS="${MAVEN_ARGS} -P release"
+          
+          if [ "${{ needs.prepare.outputs.skip_tests }}" = "true" ]; then
+            MAVEN_ARGS="${MAVEN_ARGS} -DskipTests"
+            echo "⏭️  Tests will be skipped"
+          fi
+          
+          echo ""
+          echo "📦 Starting Maven deploy..."
+          echo ""
+          
+          # 执行发布，增加超时配置
+          # central.publishing.deployment.timeout: 部署等待超时时间（秒）
+          # central.publishing.checksums.timeout: 校验和验证超时时间（秒）
+          mvn clean deploy ${MAVEN_ARGS} -e \
+            -Dgpg.passphrase="${MAVEN_GPG_PASSPHRASE}" \
+            -Dcentral.publishing.deployment.timeout=${TIMEOUT_SECONDS} \
+            -Dcentral.publishing.checksums.timeout=300
+          
+          echo ""
+          echo "✅ Successfully published to Maven Central!"
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+      - name: ✅ Post-Publish Verification
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════════╗"
+          echo "║           📦 Publish Completed Successfully!                   ║"
+          echo "╠════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                ║"
+          echo "║  Published artifacts:                                          ║"
+          echo "║    • validation-parent:${VERSION}                            "
+          echo "║    • validation-core:${VERSION}                              "
+          echo "║    • validation-spring-boot-starter:${VERSION}               "
+          echo "║    • validation-spring-boot3-starter:${VERSION}              "
+          echo "║                                                                ║"
+          echo "║  Note: Artifacts may take 10-30 minutes to appear on           ║"
+          echo "║        Maven Central search.                                   ║"
+          echo "║                                                                ║"
+          echo "╚════════════════════════════════════════════════════════════════╝"
+
+  # ===========================================================================
+  # Job 3: 发布失败通知
+  # ===========================================================================
+  notify-failure:
+    name: 🚨 Failure Notification
+    runs-on: ubuntu-latest
+    needs: [prepare, publish]
+    if: failure()
+
+    steps:
+      - name: 🚨 Generate Failure Report
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════════════╗"
+          echo "║                                                                    ║"
+          echo "║   ❌ Maven Publish Workflow Failed                                 ║"
+          echo "║                                                                    ║"
+          echo "╠════════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                    ║"
+          echo "║   Job Status:                                                      ║"
+          echo "║     • prepare: ${{ needs.prepare.result }}                                        "
+          echo "║     • publish: ${{ needs.publish.result }}                                        "
+          echo "║                                                                    ║"
+          echo "╠════════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                    ║"
+          echo "║   🔍 Common Issues & Solutions:                                    ║"
+          echo "║                                                                    ║"
+          echo "║   1. Deployment Timeout                                            ║"
+          echo "║      • Try increasing deployment_timeout in manual trigger         ║"
+          echo "║      • Check Maven Central status: https://status.maven.org        ║"
+          echo "║      • Verify if deployment actually succeeded on Central          ║"
+          echo "║                                                                    ║"
+          echo "║   2. GPG Signing Failed                                            ║"
+          echo "║      • Check MAVEN_GPG_PRIVATE_KEY secret format                   ║"
+          echo "║      • Verify MAVEN_GPG_PASSPHRASE is correct                      ║"
+          echo "║                                                                    ║"
+          echo "║   3. Maven Central Authentication Failed                           ║"
+          echo "║      • Verify OSSRH_USERNAME and OSSRH_TOKEN secrets               ║"
+          echo "║                                                                    ║"
+          echo "╚════════════════════════════════════════════════════════════════════╝"
+          exit 1
+
+  # ===========================================================================
+  # Job 4: 发布成功通知
+  # ===========================================================================
+  notify-success:
+    name: ✅ Success Notification
+    runs-on: ubuntu-latest
+    needs: [prepare, publish]
+    if: success()
+
+    steps:
+      - name: ✅ Generate Success Report
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════════════╗"
+          echo "║                                                                    ║"
+          echo "║   🎉 Maven Publish Completed Successfully!                         ║"
+          echo "║                                                                    ║"
+          echo "╠════════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                    ║"
+          echo "║   📌 Version: ${{ needs.prepare.outputs.version }}                                   "
+          echo "║   🏷️  Tag:     ${{ needs.prepare.outputs.tag_name }}                                   "
+          echo "║                                                                    ║"
+          echo "║   🔗 Maven Central (may take 10-30 min to sync):                   ║"
+          echo "║      https://search.maven.org/search?q=g:io.github.vennarshulytz   ║"
+          echo "║                                                                    ║"
+          echo "║   📝 Next Step: Run 'Create GitHub Release' workflow               ║"
+          echo "║                                                                    ║"
+          echo "╚════════════════════════════════════════════════════════════════════╝"
