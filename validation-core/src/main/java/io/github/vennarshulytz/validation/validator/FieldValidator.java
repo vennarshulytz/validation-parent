@@ -24,6 +24,9 @@ public interface FieldValidator {
 
     default String getErrorMessage(String defaultMessage, Map<String, Object> params, boolean enableI18n) {
         String errorMessage = ((String) params.get("message"));
+        if (errorMessage == null) {
+            errorMessage = defaultMessage;
+        }
         if (enableI18n) {
             return errorMessage;
         }

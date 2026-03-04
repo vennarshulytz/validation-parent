@@ -111,11 +111,14 @@ public final class NamedPlaceholderResolver {
         }
 
         Object value = params.get(key);
-        if (!(value instanceof Boolean)) {
-            return null;
+        boolean booleanValue;
+        if (value instanceof Boolean) {
+            booleanValue = ((Boolean) value);
+        } else {
+            booleanValue = Boolean.parseBoolean((String) value);
         }
 
-        boolean matched = ((Boolean) value) == expectTrue;
+        boolean matched = booleanValue == expectTrue;
         String result = matched ? truePart : falsePart;
 
         return stripQuotes(result);
