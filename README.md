@@ -10,6 +10,16 @@
 
 A lightweight Spring Boot Starter that encapsulates validation logic in the Controller layer, keeping your entity classes clean and free from validation annotations.
 
+## Project Repository
+
+- **GitHub**：[vennarshulytz/validation-parent: Custom validation starter for Spring Boot](https://github.com/vennarshulytz/validation-parent)
+
+---
+
+- If you encounter any issues while using this project, feel free to open an Issue. Pull Requests are always welcome and highly appreciated.
+- If you find this project helpful, please consider giving it a ⭐ Star on GitHub.
+- Your support means a lot and helps keep the project actively maintained and improved.
+
 ## Background
 
 In traditional Spring Boot projects, we typically use `Spring Validation` for parameter validation. However, we encountered several pain points in practice:

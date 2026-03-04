@@ -8,6 +8,16 @@
 
 一个轻量级的 Spring Boot Starter，将参数校验逻辑内聚在 Controller 层，避免实体类被校验注解污染。
 
+## 项目地址
+
+- **GitHub**：[vennarshulytz/validation-parent: Custom validation starter for Spring Boot](https://github.com/vennarshulytz/validation-parent)
+
+---
+
+- 如果在使用过程中遇到问题，欢迎随时提交 Issue；也非常欢迎通过 PR 参与改进。 
+- 如果这个项目对你有所帮助，欢迎在 GitHub 上点个 ⭐ Star 支持一下。
+- 你的支持是开源作者持续维护和迭代项目的重要动力！
+
 ## 项目背景
 
 在传统的 Spring Boot 项目中，我们通常使用 `Spring Validation` 进行参数校验。然而，在实际开发过程中，我们遇到了以下痛点：
