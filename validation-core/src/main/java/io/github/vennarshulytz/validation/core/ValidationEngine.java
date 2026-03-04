@@ -158,11 +158,12 @@ public class ValidationEngine {
         }
 
         // 执行校验
-        String errorMessage = validator.validate(fieldName, fieldValue, mergedParams, context.isEnableI18n());
+        boolean enableI18n = context.isEnableI18n();
+        String errorMessage = validator.validate(fieldName, fieldValue, mergedParams, enableI18n);
 
         if (errorMessage != null) {
             // 处理国际化
-            if (context.isEnableI18n() && messageResolver != null) {
+            if (enableI18n && messageResolver != null) {
                 errorMessage = messageResolver.resolve(errorMessage, mergedParams);
             } else {
                 errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);
@@ -213,9 +214,10 @@ public class ValidationEngine {
         Map<String, Object> params = validator.parseParams(annotation);
 
 
-        String errorMessage = validator.validate(paramName, value, params, context.isEnableI18n());
+        boolean enableI18n = context.isEnableI18n();
+        String errorMessage = validator.validate(paramName, value, params, enableI18n);
         if (errorMessage != null) {
-            if (context.isEnableI18n() && messageResolver != null) {
+            if (enableI18n && messageResolver != null) {
                 errorMessage = messageResolver.resolve(errorMessage, params);
             } else {
                 errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);

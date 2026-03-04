@@ -49,6 +49,7 @@ public class DecimalMaxValidator extends AbstractDecimalValidator implements Fie
         } else {
             inclusive = Boolean.parseBoolean((String) inclusiveObject);
         }
+        params.put("inclusive", inclusive);
 
 
         // BigDecimal maxValue;
