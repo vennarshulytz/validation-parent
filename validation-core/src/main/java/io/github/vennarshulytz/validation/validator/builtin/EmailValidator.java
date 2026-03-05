@@ -182,7 +182,7 @@ public class EmailValidator implements FieldValidator {
 
         if (annotation instanceof EmailCheck) {
             EmailCheck emailCheck = (EmailCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", emailCheck.message());
             return params;
         }

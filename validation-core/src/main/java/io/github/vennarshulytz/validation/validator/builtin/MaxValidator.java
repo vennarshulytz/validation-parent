@@ -83,7 +83,7 @@ public class MaxValidator extends AbstractRangeValidator implements FieldValidat
 
         if (annotation instanceof MaxCheck) {
             MaxCheck maxCheck = (MaxCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(3);
             params.put("message", maxCheck.message());
             params.put("value", maxCheck.value());
             return params;

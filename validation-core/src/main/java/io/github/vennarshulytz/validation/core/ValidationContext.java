@@ -17,7 +17,7 @@ public class ValidationContext {
     private final ValidationMode mode;
     private final boolean enableI18n;
     private final ValidationResult result;
-    private final List<ValidationRule> rules = new ArrayList<>();
+    private List<ValidationRule> rules;
 
     // 存储每个类型对应的明确指定路径集合（用于排除）
     private final Map<Class<?>, Set<String>> typeExplicitPaths = new HashMap<>();
@@ -32,12 +32,15 @@ public class ValidationContext {
      * 初始化规则
      */
     public void initRules(ValidationRules validationRules) {
-        if (validationRules == null || validationRules.value().length == 0) {
+
+        ValidationRule[] value = validationRules.value();
+        int length = value.length;
+        if (length == 0) {
             return;
         }
-
+        rules = new ArrayList<>(length);
         // 第一遍：收集每个类型的所有明确指定路径
-        for (ValidationRule rule : validationRules.value()) {
+        for (ValidationRule rule : value) {
             Class<?> type = rule.type();
             String path = rule.path();
 

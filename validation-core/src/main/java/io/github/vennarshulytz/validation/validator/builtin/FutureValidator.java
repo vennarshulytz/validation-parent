@@ -47,7 +47,7 @@ public class FutureValidator extends AbstractTemporalValidator implements FieldV
 
         if (annotation instanceof FutureCheck) {
             FutureCheck futureCheck = (FutureCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", futureCheck.message());
             return params;
         }

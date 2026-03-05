@@ -91,7 +91,7 @@ public class DigitsValidator extends AbstractDecimalValidator implements FieldVa
 
         if (annotation instanceof DigitsCheck) {
             DigitsCheck digitsCheck = (DigitsCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(5);
             params.put("message", digitsCheck.message());
             params.put("integer", digitsCheck.integer());
             params.put("fraction", digitsCheck.fraction());

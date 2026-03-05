@@ -72,7 +72,7 @@ public class MinValidator extends AbstractRangeValidator implements FieldValidat
 
         if (annotation instanceof MinCheck) {
             MinCheck minCheck = (MinCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(3);
             params.put("message", minCheck.message());
             params.put("value", minCheck.value());
             return params;

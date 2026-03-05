@@ -31,7 +31,7 @@ public class NotNullValidator implements FieldValidator  {
 
         if (annotation instanceof NotNullCheck) {
             NotNullCheck notNullCheck = (NotNullCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", notNullCheck.message());
             return params;
         }

@@ -30,7 +30,7 @@ public class NullValidator implements FieldValidator {
 
         if (annotation instanceof NullCheck) {
             NullCheck nullCheck = (NullCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", nullCheck.message());
             return params;
         }

@@ -47,7 +47,7 @@ public class PastValidator extends AbstractTemporalValidator implements FieldVal
 
         if (annotation instanceof PastCheck) {
             PastCheck pastCheck = (PastCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", pastCheck.message());
             return params;
         }

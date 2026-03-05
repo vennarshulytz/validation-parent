@@ -62,7 +62,7 @@ public class NotEmptyValidator implements FieldValidator {
 
         if (annotation instanceof NotEmptyCheck) {
             NotEmptyCheck notEmptyCheck = (NotEmptyCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", notEmptyCheck.message());
             return params;
         }

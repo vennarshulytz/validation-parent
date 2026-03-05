@@ -50,7 +50,7 @@ public class PastOrPresentValidator extends AbstractTemporalValidator implements
 
         if (annotation instanceof PastOrPresentCheck) {
             PastOrPresentCheck pastOrPresentCheck = (PastOrPresentCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", pastOrPresentCheck.message());
             return params;
         }

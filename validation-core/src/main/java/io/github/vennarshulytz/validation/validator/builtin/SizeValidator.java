@@ -85,7 +85,7 @@ public class SizeValidator implements FieldValidator {
 
         if (annotation instanceof SizeCheck) {
             SizeCheck sizeCheck = (SizeCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(5);
             params.put("message", sizeCheck.message());
             params.put("min", sizeCheck.min());
             params.put("max", sizeCheck.max());

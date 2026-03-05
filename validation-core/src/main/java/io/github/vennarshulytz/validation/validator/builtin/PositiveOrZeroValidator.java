@@ -41,7 +41,7 @@ public class PositiveOrZeroValidator extends AbstractSignValidator implements Fi
 
         if (annotation instanceof PositiveOrZeroCheck) {
             PositiveOrZeroCheck positiveOrZeroCheck = (PositiveOrZeroCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", positiveOrZeroCheck.message());
             return params;
         }

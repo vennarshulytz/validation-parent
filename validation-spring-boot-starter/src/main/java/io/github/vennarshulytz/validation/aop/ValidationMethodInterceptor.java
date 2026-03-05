@@ -116,10 +116,10 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
                 engine.validate(argument, context);
             }
 
-            // // 快速失败模式下，有错误立即停止
-            // if (context.getResult().shouldStop()) {
-            //     break;
-            // }
+            // 快速失败模式下，有错误立即停止
+            if (context.getResult().shouldStop()) {
+                break;
+            }
 
             // 处理带有 @ValidateWith 的注解
             processValidateWithAnnotations(parameter, argument, paramName, context, engine);

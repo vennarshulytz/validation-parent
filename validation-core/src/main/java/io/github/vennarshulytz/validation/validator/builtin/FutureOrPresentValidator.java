@@ -47,7 +47,7 @@ public class FutureOrPresentValidator extends AbstractTemporalValidator implemen
 
         if (annotation instanceof FutureOrPresentCheck) {
             FutureOrPresentCheck futureOrPresentCheck = (FutureOrPresentCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", futureOrPresentCheck.message());
             return params;
         }

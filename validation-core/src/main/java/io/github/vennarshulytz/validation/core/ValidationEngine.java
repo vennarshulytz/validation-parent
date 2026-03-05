@@ -152,8 +152,9 @@ public class ValidationEngine {
         ValidationResult result = context.getResult();
 
         // 合并参数
-        Map<String, Object> mergedParams = new HashMap<>(params);
+        Map<String, Object> mergedParams = params;
         if (message != null && !message.isEmpty()) {
+            mergedParams = new HashMap<>(params);
             mergedParams.put("message", message);
         }
 

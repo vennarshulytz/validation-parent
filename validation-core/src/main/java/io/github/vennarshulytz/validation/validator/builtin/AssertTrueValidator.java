@@ -38,7 +38,7 @@ public class AssertTrueValidator implements FieldValidator {
 
         if (annotation instanceof AssertTrueCheck) {
             AssertTrueCheck assertTrueCheck = (AssertTrueCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", assertTrueCheck.message());
             return params;
         }

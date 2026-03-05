@@ -37,7 +37,7 @@ public class NotBlankValidator implements FieldValidator {
 
         if (annotation instanceof NotBlankCheck) {
             NotBlankCheck notBlankCheck = (NotBlankCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", notBlankCheck.message());
             return params;
         }

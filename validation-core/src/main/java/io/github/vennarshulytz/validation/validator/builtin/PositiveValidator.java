@@ -41,7 +41,7 @@ public class PositiveValidator extends AbstractSignValidator implements FieldVal
 
         if (annotation instanceof PositiveCheck) {
             PositiveCheck positiveCheck = (PositiveCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", positiveCheck.message());
             return params;
         }

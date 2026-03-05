@@ -80,7 +80,7 @@ public class DecimalMinValidator extends AbstractDecimalValidator implements Fie
 
         if (annotation instanceof DecimalMinCheck) {
             DecimalMinCheck decimalMinCheck = (DecimalMinCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(5);
             params.put("message", decimalMinCheck.message());
             params.put("value", decimalMinCheck.value());
             params.put("inclusive", decimalMinCheck.inclusive());

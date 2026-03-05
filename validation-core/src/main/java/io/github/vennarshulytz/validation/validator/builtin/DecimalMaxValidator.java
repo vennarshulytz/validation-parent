@@ -82,7 +82,7 @@ public class DecimalMaxValidator extends AbstractDecimalValidator implements Fie
 
         if (annotation instanceof DecimalMaxCheck) {
             DecimalMaxCheck decimalMaxCheck = (DecimalMaxCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(5);
             params.put("message", decimalMaxCheck.message());
             params.put("value", decimalMaxCheck.value());
             params.put("inclusive", decimalMaxCheck.inclusive());

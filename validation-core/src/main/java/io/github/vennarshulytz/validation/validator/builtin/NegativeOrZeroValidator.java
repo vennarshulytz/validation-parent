@@ -41,7 +41,7 @@ public class NegativeOrZeroValidator extends AbstractSignValidator implements Fi
 
         if (annotation instanceof NegativeOrZeroCheck) {
             NegativeOrZeroCheck negativeOrZeroCheck = (NegativeOrZeroCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", negativeOrZeroCheck.message());
             return params;
         }

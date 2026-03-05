@@ -58,7 +58,7 @@ public class PatternValidator implements FieldValidator {
 
         if (annotation instanceof PatternCheck) {
             PatternCheck patternCheck = (PatternCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(3);
             params.put("message", patternCheck.message());
             params.put("regexp", patternCheck.regexp());
             return params;

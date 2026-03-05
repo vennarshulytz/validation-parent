@@ -41,7 +41,7 @@ public class NegativeValidator extends AbstractSignValidator implements FieldVal
 
         if (annotation instanceof NegativeCheck) {
             NegativeCheck negativeCheck = (NegativeCheck) annotation;
-            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>(2);
             params.put("message", negativeCheck.message());
             return params;
         }
