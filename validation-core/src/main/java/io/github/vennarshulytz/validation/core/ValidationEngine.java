@@ -84,10 +84,9 @@ public class ValidationEngine {
                 : Collections.emptySet();
 
         // 查找匹配的实例
-        List<FieldAccessor.TypedInstance> instances = FieldAccessor.findInstancesByType(
-                target, targetType, path, excludedPaths);
 
-        for (FieldAccessor.TypedInstance typedInstance : instances) {
+        for (FieldAccessor.TypedInstance typedInstance : FieldAccessor.findInstancesByTypeLazy(
+                target, targetType, path, excludedPaths)) {
             if (result.shouldStop()) {
                 break;
             }

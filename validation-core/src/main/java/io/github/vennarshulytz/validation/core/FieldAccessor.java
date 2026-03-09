@@ -2,6 +2,8 @@ package io.github.vennarshulytz.validation.core;
 
 import io.github.vennarshulytz.validation.utils.PathMatchUtil;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -15,160 +17,136 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FieldAccessor {
 
-    private static final Map<Class<?>, Map<String, Field>> FIELD_CACHE = new ConcurrentHashMap<>();
-
-    private static final Map<Class<?>, Boolean> SIMPLE_TYPE_CACHE = new ConcurrentHashMap<>();
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     /**
-     * 获取字段值
+     * 字段元数据缓存：Class -> 字段名 -> FieldMeta（包含 Field 和 MethodHandle）
+     */
+    private static final Map<Class<?>, Map<String, FieldMeta>> FIELD_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * 简单类型判断结果缓存
+     */
+    private static final Map<Class<?>, Boolean> SIMPLE_TYPE_CACHE = new ConcurrentHashMap<>();
+
+    // ========================= 公共 API =========================
+
+    /**
+     * 获取字段值（基于 MethodHandle，高性能）
      */
     public static Object getFieldValue(Object target, String fieldName) {
         if (target == null || fieldName == null || fieldName.isEmpty()) {
             return null;
         }
-
-        try {
-            Field field = getField(target.getClass(), fieldName);
-            if (field == null) {
-                return null;
-            }
-            return field.get(target);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Failed to access field: " + fieldName, e);
+        FieldMeta meta = getFieldMeta(target.getClass(), fieldName);
+        if (meta == null) {
+            return null;
         }
+        return meta.getValue(target);
     }
 
     /**
      * 获取字段
      */
+    @Deprecated
     public static Field getField(Class<?> clazz, String fieldName) {
-        Map<String, Field> fields = FIELD_CACHE.computeIfAbsent(clazz, FieldAccessor::cacheFields);
-        return fields.get(fieldName);
+        FieldMeta meta = getFieldMeta(clazz, fieldName);
+        return meta != null ? meta.field : null;
     }
 
     /**
-     * 获取所有字段
+     * 获取所有字段（返回不可变视图）
      */
+    @Deprecated
     public static Map<String, Field> getAllFields(Class<?> clazz) {
-        return FIELD_CACHE.computeIfAbsent(clazz, FieldAccessor::cacheFields);
+        Map<String, FieldMeta> metaMap = getFieldMetaMap(clazz);
+        // 构建 Field 视图（仅在需要兼容旧 API 时使用）
+        Map<String, Field> result = new HashMap<>(metaMap.size());
+        for (Map.Entry<String, FieldMeta> entry : metaMap.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().field);
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     /**
-     * 缓存类的所有字段
+     * 惰性查找目标类型的实例
+     * <p>
+     * 返回一个 {@link Iterable}，内部使用显式栈驱动的 DFS 迭代器。
+     * 每次 {@code next()} 仅推进到下一个匹配项，调用方可随时停止，
+     * 无需全量收集。
+     *
+     * @param root          根对象
+     * @param targetType    目标类型
+     * @param targetPath    目标路径（空字符串表示匹配所有）
+     * @param excludedPaths 需要排除的路径集合（仅当 targetPath 为空时使用）
+     * @return 可迭代的匹配实例（惰性求值）
      */
-    private static Map<String, Field> cacheFields(Class<?> clazz) {
-        Map<String, Field> fieldMap = new HashMap<>();
+    public static Iterable<TypedInstance> findInstancesByTypeLazy(Object root, Class<?> targetType,
+                                                              String targetPath, Set<String> excludedPaths) {
+        return () -> new TypedInstanceIterator(root, targetType, targetPath, excludedPaths);
+    }
+
+    @Deprecated
+    public static List<TypedInstance> findInstancesByType(Object root, Class<?> targetType,
+                                                          String targetPath, Set<String> excludedPaths) {
+        List<TypedInstance> result = new ArrayList<>();
+        for (TypedInstance typedInstance : findInstancesByTypeLazy(root, targetType, targetPath, excludedPaths)) {
+            result.add(typedInstance);
+        }
+        return result;
+    }
+
+    // ========================= 内部实现 =========================
+
+    private static FieldMeta getFieldMeta(Class<?> clazz, String fieldName) {
+        return getFieldMetaMap(clazz).get(fieldName);
+    }
+
+    private static Map<String, FieldMeta> getFieldMetaMap(Class<?> clazz) {
+        return FIELD_CACHE.computeIfAbsent(clazz, FieldAccessor::buildFieldMeta);
+    }
+
+    /**
+     * 构建类的字段元数据并缓存（含 MethodHandle）
+     */
+    private static Map<String, FieldMeta> buildFieldMeta(Class<?> clazz) {
+        Map<String, FieldMeta> metaMap = new HashMap<>();
         Class<?> current = clazz;
 
         while (current != null && current != Object.class) {
             for (Field field : current.getDeclaredFields()) {
+                String fieldName = field.getName();
+                if (metaMap.containsKey(fieldName)) {
+                    continue; // 子类字段优先
+                }
                 int modifiers = field.getModifiers();
                 if (Modifier.isStatic(modifiers) || field.isSynthetic()) {
                     continue;
                 }
-                String fieldName = field.getName();
-                if (fieldMap.containsKey(fieldName)) {
-                    continue;
-                }
                 field.setAccessible(true);
-                fieldMap.put(field.getName(), field);
+                MethodHandle handle;
+                try {
+                    handle = LOOKUP.unreflectGetter(field);
+                } catch (IllegalAccessException e) {
+                    // fallback: 无法创建 MethodHandle 时仍保留 Field
+                    handle = null;
+                }
+                metaMap.put(fieldName, new FieldMeta(field, handle));
             }
             current = current.getSuperclass();
         }
 
-        return fieldMap;
-    }
-
-    /**
-     * 查找目标类型的所有实例
-     *
-     * @param root 根对象
-     * @param targetType 目标类型
-     * @param targetPath 目标路径（空字符串表示匹配所有）
-     * @param excludedPaths 需要排除的路径集合（仅当targetPath为空时使用）
-     * @return 匹配的实例列表
-     */
-    public static List<TypedInstance> findInstancesByType(Object root, Class<?> targetType,
-                                                          String targetPath, Set<String> excludedPaths) {
-        List<TypedInstance> result = new ArrayList<>();
-        findInstancesRecursive(root, targetType, targetPath, excludedPaths, "", result, new IdentityHashMap<>());
-        return result;
-    }
-
-    private static void findInstancesRecursive(Object obj, Class<?> targetType, String targetPath,
-                                               Set<String> excludedPaths, String currentPath,
-                                               List<TypedInstance> result, Map<Object, Boolean> visited) {
-        if (obj == null || visited.containsKey(obj)) {
-            return;
-        }
-
-        // 避免基本类型和常用类型的深度遍历
-        if (isSimpleType(obj.getClass())) {
-            return;
-        }
-
-        visited.put(obj, Boolean.TRUE);
-
-        // 处理集合
-        if (obj instanceof Collection<?>) {
-            Collection<?> collection = (Collection<?>) obj;
-
-            int index = 0;
-            for (Object item : collection) {
-                // 集合元素的路径保持与集合属性相同（用于匹配）
-                String itemPath = currentPath.isEmpty() ? "[" + index + "]" : currentPath + "[" + index + "]";
-                findInstancesRecursive(item, targetType, targetPath, excludedPaths, itemPath, result, visited);
-                index++;
-            }
-            return;
-        }
-
-        // 处理Map
-        if (obj instanceof Map<?, ?>) {
-            Map<?, ?> map = (Map<?, ?>) obj;
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                String keyPath = currentPath.isEmpty() ? "[" + entry.getKey() + "]" : currentPath + "[" + entry.getKey() + "]";
-                findInstancesRecursive(entry.getValue(), targetType, targetPath, excludedPaths, keyPath, result, visited);
-            }
-            return;
-        }
-
-        // 检查当前对象是否匹配
-        if (targetType.isInstance(obj)) {
-            boolean shouldInclude = shouldIncludeInstance(currentPath, targetPath, excludedPaths);
-            if (shouldInclude) {
-                result.add(new TypedInstance(obj, currentPath));
-            }
-        }
-
-        // 递归处理字段
-        Map<String, Field> fields = getAllFields(obj.getClass());
-        for (Map.Entry<String, Field> entry : fields.entrySet()) {
-            String fieldName = entry.getKey();
-            Field field = entry.getValue();
-
-            try {
-                Object fieldValue = field.get(obj);
-                if (fieldValue != null) {
-                    String fieldPath = currentPath.isEmpty() ? fieldName : currentPath + "." + fieldName;
-                    findInstancesRecursive(fieldValue, targetType, targetPath, excludedPaths, fieldPath, result, visited);
-                }
-            } catch (IllegalAccessException e) {
-                // ignore
-            }
-        }
+        return Collections.unmodifiableMap(metaMap);
     }
 
     /**
      * 判断实例是否应该被包含
      */
     private static boolean shouldIncludeInstance(String currentPath, String targetPath, Set<String> excludedPaths) {
-        // 如果指定了具体路径，则精确匹配
         if (targetPath != null && !targetPath.isEmpty()) {
             return pathMatches(currentPath, targetPath);
         }
 
-        // 空路径：匹配所有，但排除已明确指定的路径
         if (excludedPaths != null && !excludedPaths.isEmpty()) {
             for (String excludedPath : excludedPaths) {
                 if (pathMatches(currentPath, excludedPath)) {
@@ -180,21 +158,19 @@ public class FieldAccessor {
         return true;
     }
 
-    /**
-     * 路径匹配
-     */
     private static boolean pathMatches(String currentPath, String targetPath) {
         if (targetPath == null || targetPath.isEmpty()) {
             return true;
         }
-
         if (currentPath == null || currentPath.isEmpty()) {
             return false;
         }
-
         return PathMatchUtil.match(currentPath, targetPath);
     }
 
+    /**
+     * 简单类型判断（带缓存）
+     */
     private static boolean isSimpleType(Class<?> clazz) {
         return SIMPLE_TYPE_CACHE.computeIfAbsent(clazz, FieldAccessor::computeIsSimpleType);
     }
@@ -210,10 +186,185 @@ public class FieldAccessor {
                 || clazz.getName().startsWith("java.time");
     }
 
+    // ========================= 内部类 =========================
+
+    /**
+     * 字段元数据：封装 Field + MethodHandle
+     */
+    private static final class FieldMeta {
+        final Field field;
+        final MethodHandle getter;
+
+        FieldMeta(Field field, MethodHandle getter) {
+            this.field = field;
+            this.getter = getter;
+        }
+
+        Object getValue(Object target) {
+            try {
+                if (getter != null) {
+                    return getter.invoke(target);
+                }
+                return field.get(target);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to access field: " + field.getName(), e);
+            }
+        }
+    }
+
+    /**
+     * DFS 迭代器遍历帧：表示一个待处理的遍历任务
+     */
+    private static final class TraversalFrame {
+        final Object obj;
+        final String path;
+
+        TraversalFrame(Object obj, String path) {
+            this.obj = obj;
+            this.path = path;
+        }
+    }
+
+    /**
+     * 惰性 DFS 迭代器
+     * <p>
+     * 使用显式栈替代递归，每次调用 {@code next()} 从栈中推进到下一个匹配项。
+     * 调用方不调用 {@code next()} 时不会继续遍历，实现真正的惰性求值。
+     */
+    private static final class TypedInstanceIterator implements Iterator<TypedInstance> {
+        private final Class<?> targetType;
+        private final String targetPath;
+        private final Set<String> excludedPaths;
+        private final IdentityHashMap<Object, Boolean> visited;
+        private final Deque<TraversalFrame> stack;
+
+        /**
+         * 预取的下一个匹配项
+         */
+        private TypedInstance next;
+
+        TypedInstanceIterator(Object root, Class<?> targetType,
+                              String targetPath, Set<String> excludedPaths) {
+            this.targetType = targetType;
+            this.targetPath = targetPath;
+            this.excludedPaths = excludedPaths;
+            this.visited = new IdentityHashMap<>();
+            this.stack = new ArrayDeque<>();
+
+            if (root != null) {
+                stack.push(new TraversalFrame(root, ""));
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (next != null) {
+                return true;
+            }
+            next = advance();
+            return next != null;
+        }
+
+        @Override
+        public TypedInstance next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            TypedInstance result = next;
+            next = null;
+            return result;
+        }
+
+        /**
+         * 从栈中推进，找到下一个匹配的 TypedInstance，找不到则返回 null
+         */
+        private TypedInstance advance() {
+            while (!stack.isEmpty()) {
+                TraversalFrame frame = stack.pop();
+                Object obj = frame.obj;
+                String currentPath = frame.path;
+
+                if (obj == null || visited.containsKey(obj)) {
+                    continue;
+                }
+
+                if (isSimpleType(obj.getClass())) {
+                    continue;
+                }
+
+                visited.put(obj, Boolean.TRUE);
+
+                // 处理集合
+                if (obj instanceof Collection<?>) {
+                    pushCollectionElements((Collection<?>) obj, currentPath);
+                    continue;
+                }
+
+                // 处理 Map
+                if (obj instanceof Map<?, ?>) {
+                    pushMapEntries((Map<?, ?>) obj, currentPath);
+                    continue;
+                }
+
+                // 先将子字段压栈（倒序，保证遍历顺序一致）
+                pushObjectFields(obj, currentPath);
+
+                // 再检查当前对象是否匹配（DFS 先序：先返回父节点，再遍历子节点）
+                if (targetType.isInstance(obj)) {
+                    if (shouldIncludeInstance(currentPath, targetPath, excludedPaths)) {
+                        return new TypedInstance(obj, currentPath);
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void pushCollectionElements(Collection<?> collection, String currentPath) {
+            // 将集合元素逆序压栈，使得正序弹出
+            Object[] items = collection.toArray();
+            for (int i = items.length - 1; i >= 0; i--) {
+                if (items[i] != null) {
+                    String itemPath = currentPath.isEmpty()
+                            ? "[" + i + "]"
+                            : currentPath + "[" + i + "]";
+                    stack.push(new TraversalFrame(items[i], itemPath));
+                }
+            }
+        }
+
+        private void pushMapEntries(Map<?, ?> map, String currentPath) {
+            // Map 无序，直接压入
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                Object value = entry.getValue();
+                if (value != null) {
+                    String keyPath = currentPath.isEmpty()
+                            ? "[" + entry.getKey() + "]"
+                            : currentPath + "[" + entry.getKey() + "]";
+                    stack.push(new TraversalFrame(value, keyPath));
+                }
+            }
+        }
+
+        private void pushObjectFields(Object obj, String currentPath) {
+            Map<String, FieldMeta> metaMap = getFieldMetaMap(obj.getClass());
+            for (Map.Entry<String, FieldMeta> entry : metaMap.entrySet()) {
+                String fieldName = entry.getKey();
+                FieldMeta meta = entry.getValue();
+                Object fieldValue = meta.getValue(obj);
+                if (fieldValue != null) {
+                    String fieldPath = currentPath.isEmpty()
+                            ? fieldName
+                            : currentPath + "." + fieldName;
+                    stack.push(new TraversalFrame(fieldValue, fieldPath));
+                }
+            }
+        }
+    }
+
     /**
      * 类型化实例
      */
-    public static class TypedInstance {
+    public static final class TypedInstance {
         private final Object instance;
         private final String path;
 
