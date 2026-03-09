@@ -27,9 +27,9 @@ public class MessageResolver {
      */
     public String resolve(String message, Map<String, Object> params) {
 
-        if (message == null) {
-            return message;
-        }
+        // if (message == null) {
+        //     return message;
+        // }
 
         if (!enabled) {
             return NamedPlaceholderResolver.resolve(message, params);

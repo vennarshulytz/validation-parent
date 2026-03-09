@@ -4,7 +4,6 @@ import io.github.vennarshulytz.validation.annotation.FieldConfig;
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
-import io.github.vennarshulytz.validation.utils.NamedPlaceholderResolver;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
@@ -164,11 +163,7 @@ public class ValidationEngine {
 
         if (errorMessage != null) {
             // 处理国际化
-            if (enableI18n && messageResolver != null) {
-                errorMessage = messageResolver.resolve(errorMessage, mergedParams);
-            } else {
-                errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);
-            }
+            errorMessage = messageResolver.resolve(errorMessage, mergedParams);
 
             String fullPath = buildFullPath(instancePath, fieldName);
             result.addError(fullPath, errorMessage, fieldValue);
@@ -218,11 +213,7 @@ public class ValidationEngine {
         boolean enableI18n = context.isEnableI18n();
         String errorMessage = validator.validate(paramName, value, params, enableI18n);
         if (errorMessage != null) {
-            if (enableI18n && messageResolver != null) {
-                errorMessage = messageResolver.resolve(errorMessage, params);
-            } else {
-                errorMessage = NamedPlaceholderResolver.resolve(errorMessage, params);
-            }
+            errorMessage = messageResolver.resolve(errorMessage, params);
             context.getResult().addError(paramName, errorMessage, value);
         }
     }

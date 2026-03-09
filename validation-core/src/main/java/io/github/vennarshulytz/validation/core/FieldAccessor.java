@@ -3,6 +3,7 @@ package io.github.vennarshulytz.validation.core;
 import io.github.vennarshulytz.validation.utils.PathMatchUtil;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FieldAccessor {
 
     private static final Map<Class<?>, Map<String, Field>> FIELD_CACHE = new ConcurrentHashMap<>();
+
+    private static final Map<Class<?>, Boolean> SIMPLE_TYPE_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 获取字段值
@@ -59,8 +62,16 @@ public class FieldAccessor {
 
         while (current != null && current != Object.class) {
             for (Field field : current.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                if (Modifier.isStatic(modifiers) || field.isSynthetic()) {
+                    continue;
+                }
+                String fieldName = field.getName();
+                if (fieldMap.containsKey(fieldName)) {
+                    continue;
+                }
                 field.setAccessible(true);
-                fieldMap.putIfAbsent(field.getName(), field);
+                fieldMap.put(field.getName(), field);
             }
             current = current.getSuperclass();
         }
@@ -185,6 +196,10 @@ public class FieldAccessor {
     }
 
     private static boolean isSimpleType(Class<?> clazz) {
+        return SIMPLE_TYPE_CACHE.computeIfAbsent(clazz, FieldAccessor::computeIsSimpleType);
+    }
+
+    private static boolean computeIsSimpleType(Class<?> clazz) {
         return clazz.isPrimitive()
                 || clazz == String.class
                 || Number.class.isAssignableFrom(clazz)
