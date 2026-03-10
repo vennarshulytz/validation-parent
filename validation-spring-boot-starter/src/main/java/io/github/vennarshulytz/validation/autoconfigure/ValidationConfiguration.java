@@ -5,6 +5,7 @@ import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
 import io.github.vennarshulytz.validation.core.ValidatorRegistry;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
+import io.github.vennarshulytz.validation.resolver.ValidationResultArgumentResolver;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -14,6 +15,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Role;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.lang.Nullable;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.List;
 
 /**
  * 校验配置
@@ -67,5 +72,14 @@ public class ValidationConfiguration {
         processor.setValidationEngineProvider(validationEngineProvider);
         processor.setValidationPropertiesProvider(validationPropertiesProvider);
         return processor;
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    public static class ValidationWebMvcConfigurer implements WebMvcConfigurer {
+
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new ValidationResultArgumentResolver());
+        }
     }
 }

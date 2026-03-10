@@ -101,9 +101,14 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
         ValidationContext context = new ValidationContext(getDefaultMode(), isEnableI18n());
         ValidationEngine engine = getValidationEngine();
 
+        int validationResultIndex = -1;
         // 遍历所有参数进行校验
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
+            if (validationResultIndex == -1 && ValidationResult.class.isAssignableFrom(parameter.getType())) {
+                validationResultIndex = i;
+                continue;
+            }
             Object argument = arguments[i];
             String paramName = (paramNames != null && paramNames.length > i)
                     ? paramNames[i]
@@ -132,8 +137,14 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
 
         // 检查校验结果
         ValidationResult result = context.getResult();
-        if (result.hasErrors()) {
-            throw new ValidationException(result);
+        if (validationResultIndex >= 0) {
+            // 方法声明了 ValidationResult 参数：注入结果，由业务方自行处理
+            arguments[validationResultIndex] = result;
+        } else {
+            // 未声明 ValidationResult 参数：校验失败则抛出异常
+            if (result.hasErrors()) {
+                throw new ValidationException(result);
+            }
         }
 
         // 校验通过，执行原方法
