@@ -624,6 +624,45 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
 }
 ```
 
+### 手动处理校验结果
+
+默认情况下，校验失败会自动抛出 `ValidationException`。但在某些业务场景中，你可能希望自行决定如何处理校验错误（例如返回自定义格式的错误响应、部分字段失败仍允许继续等）。
+
+只需在方法签名中声明一个 `ValidationResult` 类型的参数，框架将：
+
+1. **跳过**自动抛异常的步骤
+2. 将收集到的校验结果**注入**到该参数中
+
+> 该设计理念与 Spring MVC 中 `BindingResult` 紧跟 `@Valid` 参数的惯用法一致。
+
+#### 使用方式
+
+```java
+@PostMapping("/users")
+public ResponseEntity<?> createUser(@RequestBody @ValidationRules(...) UserDTO dto, ValidationResult validationResult) {
+    // 校验结果已自动注入，不会抛出 ValidationException
+    if (validationResult.hasErrors()) {
+        // 自行决定如何响应
+        return ResponseEntity.badRequest().body(validationResult.getErrors()); 
+    }
+    // 校验通过，执行正常业务逻辑
+    return ResponseEntity.ok(userService.save(dto));
+}
+```
+
+#### 对比
+
+| 方式             | 方法签名                                                     | 校验失败行为               |
+| ---------------- | ------------------------------------------------------------ | -------------------------- |
+| 自动模式（默认） | `createUser(@ValidationRules UserDTO dto)`                   | 抛出 `ValidationException` |
+| 手动模式         | `createUser(@ValidationRules UserDTO dto, ValidationResult result)` | 注入结果，由业务方处理     |
+
+#### 注意事项
+
+- 每个方法签名中最多声明 **一个** `ValidationResult` 参数，框架只会识别第一个。
+- `ValidationResult` 参数的位置不限，但推荐放在被校验参数之后，保持可读性。
+- 即使校验无错误，`ValidationResult` 也会被注入（此时 `hasErrors()` 返回 `false`）。
+
 ## 内置校验器
 
 | 校验器 | 说明 | 参数 |

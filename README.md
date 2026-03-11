@@ -612,6 +612,44 @@ public class OrderCustomValidator implements CustomValidator<OrderDTO> {
 }
 ```
 
+### Manual Validation Result Handling
+
+By default, validation failures automatically throw a `ValidationException`. However, in some scenarios you may want to handle validation errors yourself — for example, returning a custom error response format or allowing partial failures.
+
+Simply declare a `ValidationResult` parameter in the method signature, and the framework will:
+
+1. **Skip** throwing an exception automatically
+2. **Inject** the collected validation result into that parameter
+
+> This design follows the same convention as Spring MVC's `BindingResult` placed after a `@Valid` parameter.
+
+#### Usage
+```java
+@PostMapping("/users")
+public ResponseEntity<?> createUser(@RequestBody @ValidationRules(...) UserDTO dto, ValidationResult validationResult) {
+    // The validation result is injected automatically; no ValidationException will be thrown 
+    if (validationResult.hasErrors()) { 
+        // Handle errors as you see fit
+        return ResponseEntity.badRequest().body(validationResult.getErrors()); 
+    }
+    // Validation passed — proceed with business logic
+    return ResponseEntity.ok(userService.save(dto));
+}
+```
+
+#### Comparison
+
+| Mode                | Method Signature                                             | On Validation Failure              |
+| ------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| Automatic (default) | `createUser(@ValidationRules UserDTO dto)`                   | Throws `ValidationException`       |
+| Manual              | `createUser(@ValidationRules UserDTO dto, ValidationResult result)` | Result injected; handled by caller |
+
+#### Notes
+
+- At most **one** `ValidationResult` parameter should be declared per method; only the first one will be recognized.
+- The position of the `ValidationResult` parameter is flexible, but placing it right after the validated parameter is recommended for readability.
+- Even when validation passes with no errors, the `ValidationResult` is still injected (`hasErrors()` returns `false`).
+
 ## Built-in Validators
 
 | Validator | Description | Parameters |
