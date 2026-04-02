@@ -6,7 +6,6 @@ import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationContext;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
 import io.github.vennarshulytz.validation.core.ValidationMode;
-import io.github.vennarshulytz.validation.exception.ValidationException;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -142,9 +141,7 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
             arguments[validationResultIndex] = result;
         } else {
             // 未声明 ValidationResult 参数：校验失败则抛出异常
-            if (result.hasErrors()) {
-                throw new ValidationException(result);
-            }
+            result.throwIfInvalid();
         }
 
         // 校验通过，执行原方法

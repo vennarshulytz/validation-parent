@@ -1,5 +1,7 @@
 package io.github.vennarshulytz.validation.validator;
 
+import io.github.vennarshulytz.validation.exception.ValidationException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,14 +43,30 @@ public class ValidationResult {
     }
 
     public String getErrorMessage() {
+        return getErrorMessage("; ");
+    }
+
+    public String getErrorMessage(CharSequence delimiter) {
         if (errors.isEmpty()) {
             return "";
         }
-        StringJoiner joiner = new StringJoiner("; ");
+        StringJoiner joiner = new StringJoiner(delimiter);
         for (FieldError error : errors) {
             joiner.add(error.getField() + ": " + error.getMessage());
         }
         return joiner.toString();
+    }
+
+    public void throwIfInvalid() {
+        if (hasErrors()) {
+            throw new ValidationException(this);
+        }
+    }
+
+    public <X extends Throwable> void throwIfInvalid(java.util.function.Function<ValidationResult, X> exceptionSupplier) throws X {
+        if (hasErrors()) {
+            throw exceptionSupplier.apply(this);
+        }
     }
 
     /**
