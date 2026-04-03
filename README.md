@@ -764,6 +764,18 @@ public class IdCardValidator implements FieldValidator {
               fields = @FieldConfig(names = "idCard", message = "Please enter a valid ID card number"))
 ```
 
+## BizAssert - Business Assertion Utility
+
+a lightweight and production-ready business assertion utility for Java applications.
+
+Inspired by Spring's `org.springframework.util.Assert`, **BizAssert** is specifically designed for **business logic validation** scenarios.
+
+Unlike traditional assertion utilities, **BizAssert** throws **custom business exceptions with error codes** instead of generic `IllegalArgumentException` when assertions fail. This makes error handling more structured and meaningful.
+
+It is especially suitable for parameter validation and state checks in the Service layer of enterprise applications.
+
+🔗 Project Repository:[vennarshulytz/biz-assert: BizAssert is a lightweight and enterprise-grade assertion library for Java, focused on business logic validation. Unlike standard assertion utilities, it throws customizable business exceptions with error codes, enabling consistent error handling and clearer service-layer validation across complex applications.](https://github.com/vennarshulytz/biz-assert)
+
 ## Configuration
 
 ### @EnableValidation Annotation

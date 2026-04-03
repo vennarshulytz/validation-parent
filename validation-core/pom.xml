@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.vennarshulytz</groupId>
         <artifactId>validation-parent</artifactId>
-        <version>1.1.2</version>
+        <version>1.2.0</version>
     </parent>
 
     <artifactId>validation-core</artifactId>
@@ -48,6 +48,12 @@
             <artifactId>guava</artifactId>
             <version>23.0</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.vennarshulytz</groupId>
+            <artifactId>biz-assert</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
