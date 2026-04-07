@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.vennarshulytz</groupId>
         <artifactId>validation-parent</artifactId>
-        <version>1.2.0</version>
+        <version>1.3.0</version>
     </parent>
 
     <artifactId>validation-core</artifactId>
@@ -20,6 +20,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <spring-core.version>5.3.31</spring-core.version>
         <spring-context.version>5.3.31</spring-context.version>
+        <caffeine.version>2.9.3</caffeine.version>
         <junit-jupiter.version>5.8.2</junit-jupiter.version>
         <mockito-core.version>4.5.1</mockito-core.version>
     </properties>
@@ -54,6 +55,12 @@
             <groupId>io.github.vennarshulytz</groupId>
             <artifactId>biz-assert</artifactId>
             <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
         </dependency>
 
         <dependency>

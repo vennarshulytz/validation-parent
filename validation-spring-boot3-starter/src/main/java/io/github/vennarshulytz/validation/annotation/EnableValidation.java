@@ -26,4 +26,9 @@ public @interface EnableValidation {
      * 是否启用国际化
      */
     boolean enableI18n() default false;
+
+    /**
+     * 规则缓存最大容量
+     */
+    long cacheMaximumSize() default 1024;
 }

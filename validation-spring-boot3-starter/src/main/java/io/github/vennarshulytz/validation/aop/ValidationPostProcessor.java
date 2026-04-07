@@ -3,6 +3,7 @@ package io.github.vennarshulytz.validation.aop;
 import io.github.vennarshulytz.validation.annotation.ValidatedExt;
 import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
+import io.github.vennarshulytz.validation.core.ValidationRuleCache;
 import org.aopalliance.aop.Advice;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.autoproxy.AbstractBeanFactoryAwareAdvisingPostProcessor;
@@ -30,6 +31,8 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
 
     private ObjectProvider<ValidationEngine> validationEngineProvider;
     private ObjectProvider<ValidationProperties> validationPropertiesProvider;
+    private ObjectProvider<ValidationRuleCache> validationRuleCacheProvider;
+
 
     @Override
     public void afterPropertiesSet() {
@@ -46,7 +49,7 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
      * 创建校验 Advice
      */
     protected Advice createValidationAdvice() {
-        return new ValidationMethodInterceptor(validationEngineProvider, validationPropertiesProvider);
+        return new ValidationMethodInterceptor(validationEngineProvider, validationPropertiesProvider, validationRuleCacheProvider);
     }
 
     // ========== Setter 方法，支持灵活配置 ==========
@@ -64,6 +67,10 @@ public class ValidationPostProcessor extends AbstractBeanFactoryAwareAdvisingPos
 
     public void setValidationPropertiesProvider(ObjectProvider<ValidationProperties> validationPropertiesProvider) {
         this.validationPropertiesProvider = validationPropertiesProvider;
+    }
+
+    public void setValidationRuleCacheProvider(ObjectProvider<ValidationRuleCache> validationRuleCacheProvider) {
+        this.validationRuleCacheProvider = validationRuleCacheProvider;
     }
 
 }

@@ -241,15 +241,19 @@ class ValidationIntegrationTest {
 
     private void simulateValidationRulesInit(ValidationContext context) {
         // 模拟：Employee类型，path=""，校验id不为null
-        context.initRules(new MockValidationRules(
+        ValidationRuleCache ruleCache = new ValidationRuleCache(1024);
+        ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.parseRules(new MockValidationRules(
                 new MockValidationRule(Employee.class, "",
                         new MockValidateWith(NotNullValidator.class,
                                 new MockFieldConfig(new String[]{"id"}, "不能为 null")))
         ));
+        context.setCachedRuleInfo(cachedRuleInfo);
     }
 
     private void simulatePathExclusionRules(ValidationContext context) {
-        context.initRules(new MockValidationRules(
+
+        ValidationRuleCache ruleCache = new ValidationRuleCache(1024);
+        ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.parseRules(new MockValidationRules(
                 // 规则1：Employee, path="", 校验id和name
                 new MockValidationRule(Employee.class, "",
                         new MockValidateWith(NotNullValidator.class,
@@ -259,20 +263,27 @@ class ValidationIntegrationTest {
                         new MockValidateWith(NotBlankValidator.class,
                                 new MockFieldConfig(new String[]{"phone", "address"}, "不能为 blank")))
         ));
+        context.setCachedRuleInfo(cachedRuleInfo);
     }
 
     private void simulateCustomValidatorRule(ValidationContext context) {
-        context.initRules(new MockValidationRules(
+
+        ValidationRuleCache ruleCache = new ValidationRuleCache(1024);
+        ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.parseRules(new MockValidationRules(
                 new MockValidationRuleWithCustom(DepartmentCustomValidator.class)
         ));
+        context.setCachedRuleInfo(cachedRuleInfo);
     }
 
     private void simulateNestedPathRule(ValidationContext context) {
-        context.initRules(new MockValidationRules(
+
+        ValidationRuleCache ruleCache = new ValidationRuleCache(1024);
+        ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.parseRules(new MockValidationRules(
                 new MockValidationRule(Address.class, "managerList1.address1",
                         new MockValidateWith(NotNullValidator.class,
                                 new MockFieldConfig(new String[]{"id"}, "id 不能为 null")))
         ));
+        context.setCachedRuleInfo(cachedRuleInfo);
     }
 
     // ===== 自定义校验器 =====

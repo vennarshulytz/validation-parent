@@ -1,10 +1,12 @@
 package io.github.vennarshulytz.validation.core;
 
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
-import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 校验上下文
@@ -17,39 +19,15 @@ public class ValidationContext {
     private final ValidationMode mode;
     private final boolean enableI18n;
     private final ValidationResult result;
-    private List<ValidationRule> rules;
+    private ValidationRuleCache.CachedRuleInfo cachedRuleInfo;
 
-    // 存储每个类型对应的明确指定路径集合（用于排除）
+
     private final Map<Class<?>, Set<String>> typeExplicitPaths = new HashMap<>();
 
     public ValidationContext(ValidationMode mode, boolean enableI18n) {
         this.mode = mode;
         this.enableI18n = enableI18n;
         this.result = new ValidationResult(mode == ValidationMode.FAIL_FAST);
-    }
-
-    /**
-     * 初始化规则
-     */
-    public void initRules(ValidationRules validationRules) {
-
-        ValidationRule[] value = validationRules.value();
-        int length = value.length;
-        if (length == 0) {
-            return;
-        }
-        rules = new ArrayList<>(length);
-        // 第一遍：收集每个类型的所有明确指定路径
-        for (ValidationRule rule : value) {
-            Class<?> type = rule.type();
-            String path = rule.path();
-
-            if (path != null && !path.isEmpty()) {
-                typeExplicitPaths.computeIfAbsent(type, k -> new HashSet<>()).add(path);
-            }
-
-            rules.add(rule);
-        }
     }
 
     public ValidationMode getMode() {
@@ -65,13 +43,17 @@ public class ValidationContext {
     }
 
     public List<ValidationRule> getRules() {
-        return rules;
+        return cachedRuleInfo.getRules();
     }
 
     /**
      * 获取指定类型需要排除的路径集合
      */
     public Set<String> getExcludedPaths(Class<?> type) {
-        return typeExplicitPaths.getOrDefault(type, Collections.emptySet());
+        return cachedRuleInfo.getExcludedPaths(type);
+    }
+
+    public void setCachedRuleInfo(ValidationRuleCache.CachedRuleInfo cachedRuleInfo) {
+        this.cachedRuleInfo = cachedRuleInfo;
     }
 }

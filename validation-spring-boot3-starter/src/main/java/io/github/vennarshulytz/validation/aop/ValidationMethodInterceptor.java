@@ -6,6 +6,7 @@ import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationContext;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
 import io.github.vennarshulytz.validation.core.ValidationMode;
+import io.github.vennarshulytz.validation.core.ValidationRuleCache;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -27,19 +28,23 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
 
     private final ObjectProvider<ValidationEngine> validationEngineProvider;
     private final ObjectProvider<ValidationProperties> validationPropertiesProvider;
+    private final ObjectProvider<ValidationRuleCache> validationRuleCacheProvider;
 
     private volatile ValidationEngine validationEngine;
     private volatile ValidationMode defaultMode;
     private volatile Boolean enableI18n;
+    private volatile ValidationRuleCache validationRuleCache;
 
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
 
     public ValidationMethodInterceptor(
             ObjectProvider<ValidationEngine> validationEngineProvider,
-            ObjectProvider<ValidationProperties> validationPropertiesProvider) {
+            ObjectProvider<ValidationProperties> validationPropertiesProvider,
+            ObjectProvider<ValidationRuleCache> validationRuleCacheProvider) {
         this.validationEngineProvider = validationEngineProvider;
         this.validationPropertiesProvider = validationPropertiesProvider;
+        this.validationRuleCacheProvider = validationRuleCacheProvider;
     }
 
     private ValidationEngine getValidationEngine() {
@@ -86,6 +91,20 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
         return i18n;
     }
 
+    private ValidationRuleCache getRuleCache() {
+        ValidationRuleCache cache = this.validationRuleCache;
+        if (cache == null) {
+            synchronized (this) {
+                cache = this.validationRuleCache;
+                if (cache == null) {
+                    cache = validationRuleCacheProvider.getObject();
+                    this.validationRuleCache = cache;
+                }
+            }
+        }
+        return cache;
+    }
+
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
@@ -99,6 +118,7 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
         // 创建校验上下文
         ValidationContext context = new ValidationContext(getDefaultMode(), isEnableI18n());
         ValidationEngine engine = getValidationEngine();
+        ValidationRuleCache ruleCache = getRuleCache();
 
         int validationResultIndex = -1;
 
@@ -117,7 +137,8 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
             // 处理 @ValidationRules 注解
             ValidationRules validationRules = parameter.getAnnotation(ValidationRules.class);
             if (validationRules != null && argument != null) {
-                context.initRules(validationRules);
+                ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.get(method, i, validationRules);
+                context.setCachedRuleInfo(cachedRuleInfo);
                 engine.validate(argument, context);
             }
 

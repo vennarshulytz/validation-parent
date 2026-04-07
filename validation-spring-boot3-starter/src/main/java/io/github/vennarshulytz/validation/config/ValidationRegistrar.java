@@ -28,12 +28,14 @@ public class ValidationRegistrar implements ImportBeanDefinitionRegistrar {
 
         ValidationMode mode = attributes.getEnum("mode");
         boolean enableI18n = attributes.getBoolean("enableI18n");
+        long cacheMaximumSize = attributes.getNumber("cacheMaximumSize");
 
         // 注册 ValidationProperties
         BeanDefinitionBuilder propertiesBuilder = BeanDefinitionBuilder
                 .genericBeanDefinition(ValidationProperties.class);
         propertiesBuilder.addConstructorArgValue(mode);
         propertiesBuilder.addConstructorArgValue(enableI18n);
+        propertiesBuilder.addConstructorArgValue(cacheMaximumSize);
         registry.registerBeanDefinition("validationProperties", propertiesBuilder.getBeanDefinition());
 
         // 注册 ValidationConfiguration

@@ -3,6 +3,7 @@ package io.github.vennarshulytz.validation.autoconfigure;
 import io.github.vennarshulytz.validation.aop.ValidationPostProcessor;
 import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
+import io.github.vennarshulytz.validation.core.ValidationRuleCache;
 import io.github.vennarshulytz.validation.core.ValidatorRegistry;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
 import io.github.vennarshulytz.validation.resolver.ValidationResultArgumentResolver;
@@ -58,6 +59,14 @@ public class ValidationConfiguration {
         return new ValidationEngine(validatorRegistry, messageResolver);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public ValidationRuleCache validationRuleCache(@Nullable ValidationProperties validationProperties) {
+        // 默认缓存1024个方法参数的规则，可通过配置调整
+        long cacheMaximumSize = validationProperties != null ? validationProperties.getCacheMaximumSize() : 1024;
+        return new ValidationRuleCache(cacheMaximumSize);
+    }
+
     /**
      * 注册校验后置处理器
      */
@@ -66,11 +75,13 @@ public class ValidationConfiguration {
     @ConditionalOnMissingBean
     public static ValidationPostProcessor validationPostProcessor(
             ObjectProvider<ValidationEngine> validationEngineProvider,
-            ObjectProvider<ValidationProperties> validationPropertiesProvider) {
+            ObjectProvider<ValidationProperties> validationPropertiesProvider,
+            ObjectProvider<ValidationRuleCache> validationRuleCacheProvider) {
 
         ValidationPostProcessor processor = new ValidationPostProcessor();
         processor.setValidationEngineProvider(validationEngineProvider);
         processor.setValidationPropertiesProvider(validationPropertiesProvider);
+        processor.setValidationRuleCacheProvider(validationRuleCacheProvider);
         return processor;
     }
 

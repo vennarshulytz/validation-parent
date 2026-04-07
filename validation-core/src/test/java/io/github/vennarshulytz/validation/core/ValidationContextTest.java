@@ -52,8 +52,12 @@ class ValidationContextTest {
         ValidationContext context = new ValidationContext(ValidationMode.FAIL_FAST, false);
 
         // 模拟初始化规则
+        ValidationRuleCache ruleCache = new ValidationRuleCache(1024);
+
         ValidationRules rules = createMockValidationRules();
-        context.initRules(rules);
+        ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.parseRules(rules);
+        context.setCachedRuleInfo(cachedRuleInfo);
+
 
         // 验证排除路径
         Set<String> excludedPaths = context.getExcludedPaths(MockEmployee.class);
