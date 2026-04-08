@@ -2,9 +2,9 @@ package io.github.vennarshulytz.validation.utils;
 
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.annotation.ValidationRules;
+import io.github.vennarshulytz.validation.core.ValidationEngine;
 import io.github.vennarshulytz.validation.template.ValidationRuleTemplate;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,7 +18,7 @@ public class ValidationRulesUtils {
      * @param validationRules 目标 ValidationRules 注解
      * @return 收集到的 ValidationRule 数组（顶级优先）
      */
-    public static ValidationRule[] resolveValidationRules(ValidationRules validationRules) {
+    public static ValidationRule[] resolve(ValidationRules validationRules) {
         if (validationRules == null) {
             return new ValidationRule[0];
         }
@@ -82,25 +82,7 @@ public class ValidationRulesUtils {
             if (validationRule == null) {
                 return;
             }
-
-            templateAnnotation = new ValidationRules() {
-                @Override
-                public Class<? extends Annotation> annotationType() {
-                    return ValidationRules.class;
-                }
-
-                @Override
-                public Class<? extends ValidationRuleTemplate> template() {
-                    return ValidationRuleTemplate.class;
-                }
-
-                @Override
-                public ValidationRule[] value() {
-                    return new ValidationRule[]{validationRule};
-                }
-            };
-
-            return;
+            templateAnnotation = ValidationEngine.createValidationRules(validationRule);
         }
 
         // 递归处理 template Class 上的 ValidationRules

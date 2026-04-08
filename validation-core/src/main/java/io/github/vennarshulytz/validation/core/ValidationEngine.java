@@ -5,9 +5,11 @@ import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
+import io.github.vennarshulytz.validation.template.ValidationRuleTemplate;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Parameter;
@@ -227,11 +229,16 @@ public class ValidationEngine {
     /**
      * 获取 @ValidationRules 注解
      */
-    public ValidationRules findValidationRulesAnnotation(Parameter parameter) {
+    public static ValidationRules findValidationRulesAnnotation(Parameter parameter) {
 
         ValidationRules validationRules = parameter.getAnnotation(ValidationRules.class);
         if (validationRules != null) {
             return validationRules;
+        }
+
+        ValidationRule validationRule = parameter.getAnnotation(ValidationRule.class);
+        if (validationRule != null) {
+            return createValidationRules(validationRule);
         }
 
         for (Annotation annotation : parameter.getAnnotations()) {
@@ -239,8 +246,31 @@ public class ValidationEngine {
             if (validationRules != null) {
                 return validationRules;
             }
+            validationRule = annotation.annotationType().getAnnotation(ValidationRule.class);
+            if (validationRule != null) {
+                return createValidationRules(validationRule);
+            }
         }
 
         return null;
+    }
+
+    public static @NonNull ValidationRules createValidationRules(ValidationRule validationRule) {
+        return new ValidationRules() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return ValidationRules.class;
+            }
+
+            @Override
+            public Class<? extends ValidationRuleTemplate> template() {
+                return ValidationRuleTemplate.class;
+            }
+
+            @Override
+            public ValidationRule[] value() {
+                return new ValidationRule[]{validationRule};
+            }
+        };
     }
 }

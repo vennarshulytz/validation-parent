@@ -134,7 +134,7 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
                     : "arg" + i;
 
             // 处理 @ValidationRules 注解
-            ValidationRules validationRules = engine.findValidationRulesAnnotation(parameter);
+            ValidationRules validationRules = ValidationEngine.findValidationRulesAnnotation(parameter);
             if (validationRules != null && argument != null) {
                 ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.get(method, i, validationRules);
                 context.setCachedRuleInfo(cachedRuleInfo);

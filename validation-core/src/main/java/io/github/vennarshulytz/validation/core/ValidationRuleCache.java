@@ -39,7 +39,7 @@ public class ValidationRuleCache {
     public CachedRuleInfo parseRules(ValidationRules validationRules) {
 
         // ValidationRule[] value = validationRules.value();
-        ValidationRule[] value = ValidationRulesUtils.resolveValidationRules(validationRules);
+        ValidationRule[] value = ValidationRulesUtils.resolve(validationRules);
         int length = value.length;
         if (length == 0) {
             return CachedRuleInfo.EMPTY;
