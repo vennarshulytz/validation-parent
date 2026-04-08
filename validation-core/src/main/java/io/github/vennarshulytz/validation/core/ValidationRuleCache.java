@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.annotation.ValidationRules;
+import io.github.vennarshulytz.validation.utils.ValidationRulesUtils;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -37,7 +38,8 @@ public class ValidationRuleCache {
      */
     public CachedRuleInfo parseRules(ValidationRules validationRules) {
 
-        ValidationRule[] value = validationRules.value();
+        // ValidationRule[] value = validationRules.value();
+        ValidationRule[] value = ValidationRulesUtils.resolveValidationRules(validationRules);
         int length = value.length;
         if (length == 0) {
             return CachedRuleInfo.EMPTY;

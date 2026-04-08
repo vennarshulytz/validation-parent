@@ -3,6 +3,7 @@ package io.github.vennarshulytz.validation.core;
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.annotation.ValidationRules;
+import io.github.vennarshulytz.validation.template.ValidationRuleTemplate;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
 import org.junit.jupiter.api.DisplayName;
@@ -70,6 +71,11 @@ class ValidationContextTest {
             @Override
             public Class<? extends Annotation> annotationType() {
                 return ValidationRules.class;
+            }
+
+            @Override
+            public Class<? extends ValidationRuleTemplate> template() {
+                return ValidationRuleTemplate.class;
             }
 
             @Override

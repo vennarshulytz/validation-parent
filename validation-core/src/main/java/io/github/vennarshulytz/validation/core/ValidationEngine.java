@@ -3,12 +3,18 @@ package io.github.vennarshulytz.validation.core;
 import io.github.vennarshulytz.validation.annotation.FieldConfig;
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
 import io.github.vennarshulytz.validation.annotation.ValidationRule;
+import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
 
-import java.util.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Parameter;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 校验引擎
@@ -215,5 +221,26 @@ public class ValidationEngine {
             errorMessage = messageResolver.resolve(errorMessage, params);
             context.getResult().addError(paramName, errorMessage, value);
         }
+    }
+
+
+    /**
+     * 获取 @ValidationRules 注解
+     */
+    public ValidationRules findValidationRulesAnnotation(Parameter parameter) {
+
+        ValidationRules validationRules = parameter.getAnnotation(ValidationRules.class);
+        if (validationRules != null) {
+            return validationRules;
+        }
+
+        for (Annotation annotation : parameter.getAnnotations()) {
+            validationRules = annotation.annotationType().getAnnotation(ValidationRules.class);
+            if (validationRules != null) {
+                return validationRules;
+            }
+        }
+
+        return null;
     }
 }

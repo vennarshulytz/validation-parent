@@ -4,6 +4,7 @@ import io.github.vennarshulytz.validation.annotation.ValidationRule;
 import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.template.ValidationRuleTemplate;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,6 +76,30 @@ public class ValidationRulesUtils {
 
         // template Class 上没有标记 ValidationRules，终止递归
         if (templateAnnotation == null) {
+
+
+            ValidationRule validationRule = templateClass.getAnnotation(ValidationRule.class);
+            if (validationRule == null) {
+                return;
+            }
+
+            templateAnnotation = new ValidationRules() {
+                @Override
+                public Class<? extends Annotation> annotationType() {
+                    return ValidationRules.class;
+                }
+
+                @Override
+                public Class<? extends ValidationRuleTemplate> template() {
+                    return ValidationRuleTemplate.class;
+                }
+
+                @Override
+                public ValidationRule[] value() {
+                    return new ValidationRule[]{validationRule};
+                }
+            };
+
             return;
         }
 
