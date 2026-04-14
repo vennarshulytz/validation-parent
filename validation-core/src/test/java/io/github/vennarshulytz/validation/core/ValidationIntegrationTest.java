@@ -9,6 +9,7 @@ import io.github.vennarshulytz.validation.core.model.Address;
 import io.github.vennarshulytz.validation.core.model.Department;
 import io.github.vennarshulytz.validation.core.model.Employee;
 import io.github.vennarshulytz.validation.i18n.MessageResolver;
+import io.github.vennarshulytz.validation.template.ValidationRuleTemplate;
 import io.github.vennarshulytz.validation.validator.CustomValidator;
 import io.github.vennarshulytz.validation.validator.FieldValidator;
 import io.github.vennarshulytz.validation.validator.ValidationResult;
@@ -312,6 +313,11 @@ class ValidationIntegrationTest {
         @Override
         public Class<? extends java.lang.annotation.Annotation> annotationType() {
             return ValidationRules.class;
+        }
+
+        @Override
+        public Class<? extends ValidationRuleTemplate> template() {
+            return ValidationRuleTemplate.class;
         }
 
         @Override
