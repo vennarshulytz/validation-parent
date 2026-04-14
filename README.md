@@ -650,6 +650,192 @@ public ResponseEntity<?> createUser(@RequestBody @ValidationRules(...) UserDTO d
 - The position of the `ValidationResult` parameter is flexible, but placing it right after the validated parameter is recommended for readability.
 - Even when validation passes with no errors, the `ValidationResult` is still injected (`hasErrors()` returns `false`).
 
+### Validation Rule Template
+
+#### Introduction
+
+In real-world development, the same set of validation rules often needs to be applied across multiple API endpoints. Copying and pasting `@ValidationRules` annotations leads to code redundancy, reduced readability, and increased maintenance cost — any change to the rules requires updating every occurrence manually.
+
+To address this, the framework introduces the **Validation Rule Template** feature, which allows a set of validation rules to be encapsulated into a reusable template. The template can then be referenced wherever needed, following the principle of **"define once, reuse everywhere"**.
+
+------
+
+#### Background: The Problem Without Templates
+
+Consider the following endpoint with a complex set of validation rules:
+
+```java
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "ID must not be null on update")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "Username length must be between 2 and 20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "Invalid phone number format",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+}) UserDTO user) {
+    return Result.success();
+}
+```
+
+If another endpoint (e.g., `/admin/update`) requires the exact same validation logic, the entire annotation block must be duplicated, resulting in obvious code redundancy.
+
+------
+
+#### Option 1: Custom Template Annotation
+
+**Core idea:** Create a custom annotation and meta-annotate it with `@ValidationRules`, embedding the validation rules inside. Simply apply the custom annotation directly to method parameters wherever needed.
+
+##### Step 1: Define the Template Annotation
+
+```java
+@Target({ElementType.PARAMETER, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "ID must not be null on update")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "Username length must be between 2 and 20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "Invalid phone number format",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+})
+public @interface UserUpdateValidation {
+    // No methods required
+}
+```
+
+##### Step 2: Apply the Template Annotation
+
+```java
+// Endpoint 1
+@PostMapping("/update")
+public Result update(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+
+// Endpoint 2 (reuses the same rules without duplication)
+@PostMapping("/admin/update")
+public Result adminUpdate(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+```
+
+##### Pros and Cons of Option 1
+
+| Item   | Description                                                  |
+| ------ | ------------------------------------------------------------ |
+| ✅ Pro  | Clean and concise usage, consistent with native annotation style; excellent IDE support |
+| ✅ Pro  | The annotation name can carry meaningful semantics, improving readability |
+| ⚠️ Note | A separate annotation class file must be created for each template |
+
+------
+
+#### Option 2: Custom Template Class
+
+**Core idea:** Create a class (or interface) that implements `ValidationRuleTemplate` and annotate it with `@ValidationRules`. Reference the template via `@ValidationRules(template = TemplateClass.class)`.
+
+##### Step 1: Define the Template Class
+
+```java
+@ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "ID must not be null on update")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "Username length must be between 2 and 20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "Invalid phone number format",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+})
+public interface UserUpdateValidation extends ValidationRuleTemplate {
+    // No methods required
+}
+```
+
+> **Tip:** The template can also be defined as a `class`. Using an `interface` is more concise and is the recommended approach.
+
+##### Step 2: Reference the Template Class
+
+```java
+// Endpoint 1
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+
+// Endpoint 2 (reuses the same rules without duplication)
+@PostMapping("/admin/update")
+public Result adminUpdate(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+```
+
+##### Pros and Cons of Option 2
+
+| Item   | Description                                                  |
+| ------ | ------------------------------------------------------------ |
+| ✅ Pro  | Templates exist as ordinary classes/interfaces, making them easy to organize centrally (e.g., under a `validation/template` package) |
+| ✅ Pro  | No need to introduce additional annotation types, reducing meta-annotation complexity |
+| ⚠️ Note | Referencing requires the `template` attribute, which is slightly more verbose than Option 1 |
+
+------
+
+#### Equivalence of All Three Approaches
+
+The following three usages are **functionally equivalent**. Choose freely based on your project style and team preferences:
+
+```java
+// Approach 1: Inline validation rules (no template)
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "ID must not be null on update")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "Username length must be between 2 and 20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "Invalid phone number format",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+}) UserDTO user) {
+    return Result.success();
+}
+
+// Approach 2: Custom template annotation (Option 1)
+@PostMapping("/update")
+public Result update(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+
+// Approach 3: Custom template class (Option 2)
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+```
+
+------
+
+##### Recommendation Guide
+
+| Scenario                                                     | Recommended Approach                  |
+| ------------------------------------------------------------ | ------------------------------------- |
+| Validation rules are tightly coupled with specific business semantics and the annotation should be self-descriptive | Option 1 (Custom Template Annotation) |
+| The project has many templates that need to be centrally organized and managed | Option 2 (Custom Template Class)      |
+| Validation rules are used in only a few places and reuse is not needed | Inline (No Template)                  |
+
 ## Built-in Validators
 
 | Validator | Description | Parameters |

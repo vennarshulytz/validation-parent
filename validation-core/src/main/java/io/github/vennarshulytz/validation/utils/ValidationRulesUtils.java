@@ -10,6 +10,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * ValidationRules 注解解析工具类
+ *
+ * @author vennarshulytz
+ * @since 1.3.1
+ */
 public class ValidationRulesUtils {
 
     /**

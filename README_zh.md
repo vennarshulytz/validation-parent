@@ -663,6 +663,192 @@ public ResponseEntity<?> createUser(@RequestBody @ValidationRules(...) UserDTO d
 - `ValidationResult` 参数的位置不限，但推荐放在被校验参数之后，保持可读性。
 - 即使校验无错误，`ValidationResult` 也会被注入（此时 `hasErrors()` 返回 `false`）。
 
+### 校验规则模板（Validation Rule Template）
+
+#### 功能介绍
+
+在实际业务开发中，相同的校验规则往往需要在多个接口中重复使用。若直接复制粘贴 `@ValidationRules` 注解，会导致代码冗余、可读性降低以及维护成本上升——一旦规则需要变更，就必须逐一修改所有使用该规则的地方。
+
+为解决上述问题，框架提供了**校验规则模板**功能，允许将一组校验规则封装为可复用的模板，在需要的地方直接引用，从而实现"定义一次，处处复用"。
+
+------
+
+#### 背景示例：未使用模板时的问题
+
+假设有以下接口，它使用了一组较为复杂的校验规则：
+
+```java
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "更新时ID不能为空")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "用户名长度2-20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "手机号格式错误",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+}) UserDTO user) {
+    return Result.success();
+}
+```
+
+若另一个接口（如 `/admin/update`）需要完全相同的校验逻辑，只能再次复制上述注解，造成明显的代码冗余。
+
+------
+
+#### 方案一：自定义模板注解
+
+**核心思路：** 创建一个自定义注解，并在该注解上标注 `@ValidationRules`，将校验规则"内嵌"进自定义注解中。使用时，直接将自定义注解标注在方法参数上即可。
+
+##### 第一步：定义模板注解
+
+```java
+@Target({ElementType.PARAMETER, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "更新时ID不能为空")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "用户名长度2-20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "手机号格式错误",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+})
+public @interface UserUpdateValidation {
+    // 自定义模板注解，无需添加任何方法
+}
+```
+
+##### 第二步：在接口中引用模板注解
+
+```java
+// 接口一
+@PostMapping("/update")
+public Result update(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+
+// 接口二（复用相同校验规则，无需重复编写）
+@PostMapping("/admin/update")
+public Result adminUpdate(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+```
+
+##### 方案一优缺点
+
+| 项目   | 说明                                           |
+| ------ | ---------------------------------------------- |
+| ✅ 优点 | 使用简洁，标注方式与原生注解一致，IDE 支持友好 |
+| ✅ 优点 | 可为模板注解赋予语义化的名称，提升可读性       |
+| ⚠️ 注意 | 需要为每个模板单独创建一个注解类文件           |
+
+------
+
+#### 方案二：自定义模板类
+
+**核心思路：** 创建一个实现了 `ValidationRuleTemplate` 接口的类（或接口），并在其上标注 `@ValidationRules`。使用时，通过 `@ValidationRules(template = TemplateClass.class)` 的方式引用该模板。
+
+##### 第一步：定义模板类
+
+```java
+@ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "更新时ID不能为空")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "用户名长度2-20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "手机号格式错误",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+})
+public interface UserUpdateValidation extends ValidationRuleTemplate {
+    // 自定义模板接口，无需添加任何方法
+}
+```
+
+> **提示：** 模板也可以定义为 `class`，使用 `interface` 更为简洁，推荐优先使用 `interface`。
+
+##### 第二步：在接口中引用模板类
+
+```java
+// 接口一
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+
+// 接口二（复用相同校验规则，无需重复编写）
+@PostMapping("/admin/update")
+public Result adminUpdate(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+```
+
+##### 方案二优缺点
+
+| 项目   | 说明                                                         |
+| ------ | ------------------------------------------------------------ |
+| ✅ 优点 | 模板以普通类/接口的形式存在，便于统一管理和组织（如集中放置在 `validation/template` 包下） |
+| ✅ 优点 | 无需创建额外的注解类型，降低元注解的使用复杂度               |
+| ⚠️ 注意 | 引用时需要通过 `template` 属性指定，略比方案一冗长           |
+
+------
+
+#### 三种方式功能等价说明
+
+以下三种写法在**功能上完全等价**，可根据项目风格和团队偏好自由选择：
+
+```java
+// 写法一：直接内联校验规则（不使用模板）
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules({
+        @ValidationRule(type = UserDTO.class, validators = {
+                @ValidateWith(validator = NotNullValidator.class,
+                              fields = @FieldConfig(names = "id", message = "更新时ID不能为空")),
+                @ValidateWith(validator = SizeValidator.class,
+                              fields = @FieldConfig(names = "username", message = "用户名长度2-20",
+                                                    params = {"min=2", "max=20"})),
+                @ValidateWith(validator = PatternValidator.class,
+                              fields = @FieldConfig(names = "phone", message = "手机号格式错误",
+                                                    params = {"regexp=^1[3-9]\\d{9}$"}))
+        })
+}) UserDTO user) {
+    return Result.success();
+}
+
+// 写法二：使用自定义模板注解（方案一）
+@PostMapping("/update")
+public Result update(@RequestBody @UserUpdateValidation UserDTO user) {
+    return Result.success();
+}
+
+// 写法三：使用自定义模板类（方案二）
+@PostMapping("/update")
+public Result update(@RequestBody @ValidationRules(template = UserUpdateValidation.class) UserDTO user) {
+    return Result.success();
+}
+```
+
+------
+
+#### 方案选择建议
+
+| 场景                                               | 推荐方案                 |
+| -------------------------------------------------- | ------------------------ |
+| 校验规则与特定业务语义强绑定，希望注解具有自描述性 | 方案一（自定义模板注解） |
+| 项目中模板数量较多，希望统一集中管理               | 方案二（自定义模板类）   |
+| 校验规则仅在少数地方使用，无需复用                 | 直接内联（不使用模板）   |
+
 ## 内置校验器
 
 | 校验器 | 说明 | 参数 |
