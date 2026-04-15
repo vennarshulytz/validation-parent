@@ -255,6 +255,35 @@ public class ValidationEngine {
         return null;
     }
 
+    /**
+     * 获取 @ValidationRules 注解
+     */
+    public static ValidationRules findValidationRulesAnnotation(Class<? extends ValidationRuleTemplate> templateClass) {
+
+        ValidationRules validationRules = templateClass.getAnnotation(ValidationRules.class);
+        if (validationRules != null) {
+            return validationRules;
+        }
+
+        ValidationRule validationRule = templateClass.getAnnotation(ValidationRule.class);
+        if (validationRule != null) {
+            return createValidationRules(validationRule);
+        }
+
+        for (Annotation annotation : templateClass.getAnnotations()) {
+            validationRules = annotation.annotationType().getAnnotation(ValidationRules.class);
+            if (validationRules != null) {
+                return validationRules;
+            }
+            validationRule = annotation.annotationType().getAnnotation(ValidationRule.class);
+            if (validationRule != null) {
+                return createValidationRules(validationRule);
+            }
+        }
+
+        return null;
+    }
+
     public static @NonNull ValidationRules createValidationRules(ValidationRule validationRule) {
         return new ValidationRules() {
             @Override

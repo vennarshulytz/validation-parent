@@ -78,17 +78,11 @@ public class ValidationRulesUtils {
         visitedTemplates.add(templateClass);
 
         // 检索 template Class 上是否标记了 ValidationRules 注解
-        ValidationRules templateAnnotation = templateClass.getAnnotation(ValidationRules.class);
+        ValidationRules templateAnnotation = ValidationEngine.findValidationRulesAnnotation(templateClass);
 
         // template Class 上没有标记 ValidationRules，终止递归
         if (templateAnnotation == null) {
-
-
-            ValidationRule validationRule = templateClass.getAnnotation(ValidationRule.class);
-            if (validationRule == null) {
-                return;
-            }
-            templateAnnotation = ValidationEngine.createValidationRules(validationRule);
+            return;
         }
 
         // 递归处理 template Class 上的 ValidationRules

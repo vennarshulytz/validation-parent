@@ -1,7 +1,6 @@
 package io.github.vennarshulytz.validation.aop;
 
 import io.github.vennarshulytz.validation.annotation.ValidateWith;
-import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.config.ValidationProperties;
 import io.github.vennarshulytz.validation.core.ValidationContext;
 import io.github.vennarshulytz.validation.core.ValidationEngine;
@@ -134,12 +133,12 @@ public class ValidationMethodInterceptor implements MethodInterceptor {
                     : "arg" + i;
 
             // 处理 @ValidationRules 注解
-            ValidationRules validationRules = ValidationEngine.findValidationRulesAnnotation(parameter);
-            if (validationRules != null && argument != null) {
-                ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.get(method, i, validationRules);
-                context.setCachedRuleInfo(cachedRuleInfo);
-
-                engine.validate(argument, context);
+            if (argument != null) {
+                ValidationRuleCache.CachedRuleInfo cachedRuleInfo = ruleCache.get(method, i, parameter);
+                if (cachedRuleInfo != ValidationRuleCache.CachedRuleInfo.EMPTY) {
+                    context.setCachedRuleInfo(cachedRuleInfo);
+                    engine.validate(argument, context);
+                }
             }
 
             // 快速失败模式下，有错误立即停止

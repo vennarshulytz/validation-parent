@@ -7,6 +7,7 @@ import io.github.vennarshulytz.validation.annotation.ValidationRules;
 import io.github.vennarshulytz.validation.utils.ValidationRulesUtils;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 /**
@@ -28,9 +29,12 @@ public class ValidationRuleCache {
     /**
      * 获取缓存的规则信息
      */
-    public CachedRuleInfo get(Method method, int parameterIndex, ValidationRules validationRules) {
+    public CachedRuleInfo get(Method method, int parameterIndex, Parameter parameter) {
         CacheKey key = new CacheKey(method, parameterIndex);
-        return cache.get(key, cacheKey -> parseRules(validationRules));
+        return cache.get(key, cacheKey -> {
+            ValidationRules validationRules = ValidationEngine.findValidationRulesAnnotation(parameter);
+            return parseRules(validationRules);
+        });
     }
 
     /**
