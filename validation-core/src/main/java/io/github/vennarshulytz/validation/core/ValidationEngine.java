@@ -12,7 +12,7 @@ import io.github.vennarshulytz.validation.validator.ValidationResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.AnnotatedElement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -229,7 +229,7 @@ public class ValidationEngine {
     /**
      * 获取 @ValidationRules 注解
      */
-    public static ValidationRules findValidationRulesAnnotation(Parameter parameter) {
+    public static ValidationRules findValidationRulesAnnotation(AnnotatedElement parameter) {
 
         ValidationRules validationRules = parameter.getAnnotation(ValidationRules.class);
         if (validationRules != null) {
@@ -242,35 +242,6 @@ public class ValidationEngine {
         }
 
         for (Annotation annotation : parameter.getAnnotations()) {
-            validationRules = annotation.annotationType().getAnnotation(ValidationRules.class);
-            if (validationRules != null) {
-                return validationRules;
-            }
-            validationRule = annotation.annotationType().getAnnotation(ValidationRule.class);
-            if (validationRule != null) {
-                return createValidationRules(validationRule);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 获取 @ValidationRules 注解
-     */
-    public static ValidationRules findValidationRulesAnnotation(Class<? extends ValidationRuleTemplate> templateClass) {
-
-        ValidationRules validationRules = templateClass.getAnnotation(ValidationRules.class);
-        if (validationRules != null) {
-            return validationRules;
-        }
-
-        ValidationRule validationRule = templateClass.getAnnotation(ValidationRule.class);
-        if (validationRule != null) {
-            return createValidationRules(validationRule);
-        }
-
-        for (Annotation annotation : templateClass.getAnnotations()) {
             validationRules = annotation.annotationType().getAnnotation(ValidationRules.class);
             if (validationRules != null) {
                 return validationRules;
